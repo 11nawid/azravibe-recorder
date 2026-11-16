@@ -1,6 +1,8 @@
 // Windows audio source enumeration via WASAPI/IMMDevice.
 // Render endpoints are exposed as "Monitor of ..." (loopback capture) and act as
 // the system-audio source; capture endpoints are microphones/line-ins.
+// Tell MinGW-w64 to emit the GUID instances for PKEY_* in this translation unit.
+#define INITGUID
 #include "AudioDevices.h"
 
 #include <objbase.h>

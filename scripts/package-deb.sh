@@ -4,7 +4,7 @@
 # it needs no cmake and works on any dev box with build-essential.
 set -euo pipefail
 
-VERSION="${1:-1.3.2}"
+VERSION="${1:-1.3.3}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WORK="$ROOT/dist/deb-root"
 OUT="$ROOT/dist"

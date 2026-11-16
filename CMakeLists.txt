@@ -7,7 +7,7 @@
 # The GitHub Actions release workflow (.github/workflows/release.yml) uses this
 # file to produce the .deb / .exe installer / .dmg for tagged releases.
 cmake_minimum_required(VERSION 3.16)
-project(azravibe-recorder VERSION 1.3.2 LANGUAGES CXX C)
+project(azravibe-recorder VERSION 1.3.3 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -71,7 +71,7 @@ elseif(WIN32)
         add_compile_definitions(_CRT_SECURE_NO_WARNINGS NOMINMAX WIN32_LEAN_AND_MEAN)
     endif()
 
-    set(AZRAVIBE_LINK_LIBS d3d11 dxgi dwmapi propsys avrt ole32 uuid ${FFMPEG_LIBS})
+    set(AZRAVIBE_LINK_LIBS d3d11 dxgi dwmapi avrt ole32 uuid ${FFMPEG_LIBS})
 
 elseif(APPLE)
     list(APPEND AZRAVIBE_SOURCES

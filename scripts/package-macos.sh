@@ -3,7 +3,7 @@
 #   scripts/package-macos.sh [version]
 set -euo pipefail
 
-VERSION="${1:-1.3.2}"
+VERSION="${1:-1.3.3}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 QT_PREFIX="${QT_PREFIX:-$(brew --prefix qt@6 2>/dev/null || brew --prefix qt)}"
 BUILD_DIR="${BUILD_DIR:-$ROOT/build}"
