@@ -23,9 +23,34 @@ double peakAbs(const int16_t* pcm, int samples) {
 }
 } // namespace
 
-RecorderController::RecorderController() = default;
+namespace {
+CaptureSpec specForTarget(const TargetItem& target) {
+    CaptureSpec spec;
+    if (target.type == TargetItem::Type::Window) {
+        spec.windowId = target.windowId;
+        spec.region = target.screenRect.isEmpty() ? QRect(0, 0, 2, 2) : target.screenRect;
+    } else {
+        spec.windowId = 0;
+        spec.region = target.screenRect;
+    }
+    return spec;
+}
+
+bool specMatches(const CaptureSpec& a, const CaptureSpec& b) {
+    return a.windowId == b.windowId
+        && a.region.x() == b.region.x() && a.region.y() == b.region.y()
+        && a.region.width() == b.region.width() && a.region.height() == b.region.height();
+}
+} // namespace
+
+RecorderController::RecorderController() {
+    // The video thread always runs (idle = live preview only).
+    m_videoThread = std::thread(&RecorderController::videoLoop, this);
+}
 
 RecorderController::~RecorderController() {
+    m_videoStopRequested.store(true, std::memory_order_release);
+    if (m_videoThread.joinable()) m_videoThread.join();
     stopRecording();
 }
 
@@ -68,6 +93,33 @@ std::vector<float> RecorderController::consumePeaks() {
     return out;
 }
 
+bool RecorderController::setTarget(const TargetItem& target) {
+    if (state() != State::Idle) return false;
+
+    CaptureSpec spec = specForTarget(target);
+    auto backend = createCaptureBackend();
+    if (!backend || !backend->open(spec)) {
+        {
+            std::lock_guard<std::mutex> lock(m_errorMutex);
+            m_error = QStringLiteral("Target unavailable — check capture permissions.");
+        }
+        return false;
+    }
+    backend->setShowCursor(m_cursorEnabled.load(std::memory_order_relaxed));
+
+    {
+        std::lock_guard<std::mutex> cLock(m_capturerMutex);
+        m_capturer = std::move(backend);
+        m_capturerSpec = spec;
+    }
+    {
+        std::lock_guard<std::mutex> pLock(m_previewMutex);
+        m_preview = QImage{};   // drop stale frame from the previous target
+    }
+    m_captureFailures.store(0, std::memory_order_release);
+    return true;
+}
+
 bool RecorderController::startRecording(const TargetItem& target, const QString& audioSourceName) {
     if (isBusy()) { m_error = QStringLiteral("Recording is already in progress."); return false; }
     {
@@ -79,26 +131,24 @@ bool RecorderController::startRecording(const TargetItem& target, const QString&
         m_savedPath.clear();
     }
 
-    CaptureSpec spec;
-    if (target.type == TargetItem::Type::Window) {
-        spec.windowId = target.windowId;
-        spec.region = target.screenRect.isEmpty() ? QRect(0, 0, 2, 2) : target.screenRect;
-    } else {
-        spec.windowId = 0;
-        spec.region = target.screenRect;
+    CaptureSpec spec = specForTarget(target);
+    {
+        std::lock_guard<std::mutex> cLock(m_capturerMutex);
+        if (!m_capturer || !specMatches(m_capturerSpec, spec)) {
+            m_capturer = createCaptureBackend();
+            if (!m_capturer || !m_capturer->open(spec)) {
+                m_error = QStringLiteral("Could not open the capture session.");
+                m_capturer.reset();
+                return false;
+            }
+            m_capturer->setShowCursor(m_cursorEnabled.load(std::memory_order_relaxed));
+            m_capturerSpec = spec;
+        }
     }
-    m_capturer = createCaptureBackend();
-    if (!m_capturer || !m_capturer->open(spec)) {
-        m_error = QStringLiteral("Could not open the capture session.");
-        m_capturer.reset();
-        return false;
-    }
-    m_capturer->setShowCursor(m_cursorEnabled.load(std::memory_order_relaxed));
 
-    // Prime the first frame to learn the source size.
-    if (!m_capturer->grab()) {
+    // Prime the first frame to learn the source size (also refreshes the preview).
+    if (!m_capturer || !m_capturer->grab()) {
         m_error = QStringLiteral("Target window is not available.");
-        m_capturer->close();
         return false;
     }
     m_sourceW = m_capturer->width();
@@ -115,7 +165,6 @@ bool RecorderController::startRecording(const TargetItem& target, const QString&
         dir = QDir(dirPath);
         if (!dir.exists() && !dir.mkpath(QStringLiteral("."))) {
             m_error = QStringLiteral("Output folder is not writable: %1").arg(dirPath);
-            m_capturer->close();
             return false;
         }
     } else {
@@ -124,7 +173,6 @@ bool RecorderController::startRecording(const TargetItem& target, const QString&
         dir = QDir(baseDir + QStringLiteral("/Azravibe Recorder"));
         if (!dir.exists() && !dir.mkpath(QStringLiteral("."))) {
             m_error = QStringLiteral("Cannot create output folder.");
-            m_capturer->close();
             return false;
         }
     }
@@ -143,7 +191,6 @@ bool RecorderController::startRecording(const TargetItem& target, const QString&
     cfg.outHeight  = ((int)(m_sourceH * scale)) & ~1;
     if (cfg.outWidth < 2 || cfg.outHeight < 2) {
         m_error = QStringLiteral("Output size computation failed.");
-        m_capturer->close();
         return false;
     }
     cfg.sampleRate = 48000;
@@ -151,7 +198,6 @@ bool RecorderController::startRecording(const TargetItem& target, const QString&
 
     if (!m_encoder.open(path.toStdString(), cfg)) {
         m_error = QStringLiteral("Encoder failed: %1").arg(QString::fromStdString(m_encoder.error()));
-        m_capturer->close();
         return false;
     }
 
@@ -178,7 +224,8 @@ bool RecorderController::startRecording(const TargetItem& target, const QString&
     }
     m_state.store(State::Recording, std::memory_order_release);
 
-    m_videoThread = std::thread(&RecorderController::videoLoop, this);
+    // The video thread is created once (constructor) and always runs — even idle,
+    // it streams the preview; startRecording just flips the state to Recording.
     if (m_audioActive)
         m_audioThread = std::thread(&RecorderController::audioLoop, this);
 
@@ -237,7 +284,7 @@ void RecorderController::videoLoop() {
     const int64_t frameDurUs = kUsPerSecond / m_fps;
     auto nextFrame = std::chrono::steady_clock::now();
 
-    while (!m_stopRequested.load(std::memory_order_acquire)) {
+    while (!m_videoStopRequested.load(std::memory_order_acquire)) {
         nextFrame += std::chrono::microseconds(frameDurUs);
         std::this_thread::sleep_until(nextFrame);
 
@@ -245,34 +292,34 @@ void RecorderController::videoLoop() {
         tickMediaClock(now);
 
         const State s = state();
-        if (s != State::Recording) continue;   // paused: clock frozen, ffmpeg idle
+        std::lock_guard<std::mutex> cLock(m_capturerMutex);
+        if (!m_capturer) continue;   // idle with no target selected (yet)
 
         if (!m_capturer->grab()) {
-            if (m_captureFailures.fetch_add(1) >= 2) {
-                pushNotice(QStringLiteral("Target window disappeared — recording saved."));
-                m_autoStopRequested.store(true, std::memory_order_release);
-                break;
+            const int fails = m_captureFailures.fetch_add(1) + 1;
+            if (fails >= 2) {
+                if (s == State::Recording) {
+                    pushNotice(QStringLiteral("Target window disappeared — recording saved."));
+                    m_autoStopRequested.store(true, std::memory_order_release);
+                } else {
+                    pushNotice(QStringLiteral("Preview unavailable — target gone."));
+                    m_capturer.reset();
+                    m_capturerSpec = CaptureSpec{};
+                    std::lock_guard<std::mutex> pLock(m_previewMutex);
+                    m_preview = QImage{};
+                }
             }
             continue;
         }
+        m_captureFailures.store(0, std::memory_order_release);
 
         const int64_t mediaUs = m_mediaUs.load(std::memory_order_acquire);
         const int w = m_capturer->width();
         const int h = m_capturer->height();
         const int stride = m_capturer->bytesPerLine();
 
-        if (!m_encoder.writeVideoFrame(m_capturer->data(), stride, w, h, m_capturer->format(), mediaUs)) {
-            {
-                std::lock_guard<std::mutex> lock(m_errorMutex);
-                m_error = QStringLiteral("Encoding failed: %1").arg(QString::fromStdString(m_encoder.error()));
-            }
-            pushNotice(QStringLiteral("Recording stopped: encoder error."));
-            m_autoStopRequested.store(true, std::memory_order_release);
-            break;
-        }
-
-        // ---- preview (small, cheap; skipped entirely while minimized) ----
-        if (!m_previewWanted.load(std::memory_order_relaxed)) {
+        // ---- preview build for ALL states (idle / paused / recording) ----
+        if (m_previewWanted.load(std::memory_order_relaxed)) {
             // Stale frame kept on purpose; the GUI shows it when it comes back.
         } else {
         const int pw = qMin(512, w & ~1);
@@ -308,6 +355,19 @@ void RecorderController::videoLoop() {
             m_preview = copy;
         }
         }
+
+        // ---- encode only while recording (idle/paused keep preview only) ----
+        if (s == State::Recording) {
+            if (!m_encoder.writeVideoFrame(m_capturer->data(), stride, w, h, m_capturer->format(), mediaUs)) {
+                {
+                    std::lock_guard<std::mutex> lock(m_errorMutex);
+                    m_error = QStringLiteral("Encoding failed: %1").arg(QString::fromStdString(m_encoder.error()));
+                }
+                pushNotice(QStringLiteral("Recording stopped: encoder error."));
+                m_autoStopRequested.store(true, std::memory_order_release);
+                break;
+            }
+        }
     }
 }
 
@@ -338,23 +398,20 @@ void RecorderController::audioLoop() {
 }
 
 void RecorderController::stopRecording() {
-    if (state() == State::Idle && !m_videoThread.joinable() && !m_audioThread.joinable()) {
+    if (state() == State::Idle && !m_audioThread.joinable()) {
         m_autoStopRequested.store(false, std::memory_order_release);
         return;
     }
 
+    // NOTE: the video thread is deliberately NOT stopped here — it must stay
+    // alive so the live preview keeps flowing after recording ends.
     m_stopRequested.store(true, std::memory_order_release);
 
-    if (m_videoThread.joinable()) m_videoThread.join();
     if (m_audioThread.joinable()) m_audioThread.join();
 
     m_state.store(State::Idle, std::memory_order_release);
+    m_stopRequested.store(false, std::memory_order_release);   // re-arm for the next recording
     m_autoStopRequested.store(false, std::memory_order_release);
     m_audio.close();
     m_encoder.close();
-    m_capturer->close();
-
-    if (m_swsPreview) { sws_freeContext(m_swsPreview); m_swsPreview = nullptr; }
-    if (m_previewFrame) { av_frame_free(&m_previewFrame); m_previewFrame = nullptr; }
-    m_previewBuf.clear();
 }

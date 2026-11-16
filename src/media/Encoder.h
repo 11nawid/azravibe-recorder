@@ -27,10 +27,12 @@ struct EncoderConfig {
     int outHeight    = 2160;   // even, rounded down automatically
     int sampleRate   = 48000;
     int channels     = 2;
-    int crf          = 21;     // libx264 quality (lower = better); NVENC maps to cq≈crf
-    int audioKbps    = 160;
-    int fallbackVideoKbps = 8000;
-    const char* x264Preset = "veryfast";
+    int crf          = 18;     // quality floor (lower = better); NVENC maps to cq
+    int audioKbps    = 192;
+    int fallbackVideoKbps = 12000;   // ~1.5 MB/s ≈ 90 MB/min — good quality bound
+    int maxrateKbps  = 25000;        // hard cap ~3 MB/s ≈ 190 MB/min
+    int bufsizeKbps  = 50000;
+    const char* x264Preset = "faster";
 };
 
 // Which codecs are usable on this machine (probed once).

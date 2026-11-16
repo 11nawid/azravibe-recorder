@@ -36,39 +36,36 @@ void RecordButton::paintEvent(QPaintEvent*) {
     const qreal outerR = r.width() / 2.0 - 3.0;
     const bool live = m_visual != Visual::Idle;
 
-    // ---- breathing halo while recording ----
+    // ---- breathing halo while recording (slate wash) ----
     if (live) {
         const qreal pulse = 0.5 + 0.5 * qSin(m_phase * 0.16);
         QRadialGradient halo(c, outerR + 10);
-        QColor edge(az::RED);
-        edge.setAlpha(int(40 + 50 * pulse));
-        halo.setColorAt(0.55, QColor(255, 77, 94, 0));
+        QColor edge(0x9A, 0xA3, 0xB2);
+        edge.setAlpha(int(36 + 46 * pulse));
+        halo.setColorAt(0.55, QColor(154, 163, 178, 0));
         halo.setColorAt(0.8, edge);
-        halo.setColorAt(1.0, QColor(255, 77, 94, 0));
+        halo.setColorAt(1.0, QColor(154, 163, 178, 0));
         p.fillRect(r, halo);
     }
 
-    // ---- ring ----
+    // ---- ring: monochrome steel gradient (light top → mid gray bottom) ----
     QLinearGradient ring(r.topLeft(), r.bottomRight());
     if (live) {
-        QColor a(az::RED);
-        QColor b(QStringLiteral("#FF8A5C"));
-        ring.setColorAt(0.0, a);
-        ring.setColorAt(1.0, b);
+        ring.setColorAt(0.0, QColor(0xD9, 0xDE, 0xE6));
+        ring.setColorAt(1.0, QColor(0x8B, 0x92, 0xA2));
     } else {
-        ring.setColorAt(0.0, QColor(az::VIOLET));
-        ring.setColorAt(1.0, QColor(az::CYAN));
+        ring.setColorAt(0.0, QColor(0xE9, 0xEC, 0xF1));
+        ring.setColorAt(1.0, QColor(0x6E, 0x76, 0x86));
     }
 
     QPen ringPen(QBrush(ring), 4.6);
     p.setPen(ringPen);
-    p.setBrush(QColor(0x17, 0x17, 0x20));
+    p.setBrush(QColor(0x1D, 0x20, 0x27));
     p.drawEllipse(c, outerR, outerR);
 
-    // Hover: soft lighten
     if (m_hover) {
         p.setPen(Qt::NoPen);
-        p.setBrush(QColor(255, 255, 255, 14));
+        p.setBrush(QColor(255, 255, 255, 12));
         p.drawEllipse(c, outerR, outerR);
     }
 
@@ -78,7 +75,7 @@ void RecordButton::paintEvent(QPaintEvent*) {
     p.translate(c);
     p.scale(m_pressScale, m_pressScale);
     if (!live) {
-        // Idle: record dot
+        // Idle: record dot (the one red cue)
         QRadialGradient dot(QPointF(-inner * 0.25, -inner * 0.25), inner * 1.6);
         dot.setColorAt(0.0, QColor(0xFF, 0x6B, 0x7A));
         dot.setColorAt(1.0, QColor(az::RED));

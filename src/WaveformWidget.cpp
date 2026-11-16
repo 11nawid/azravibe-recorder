@@ -8,24 +8,29 @@
 #include <QtMath>
 #include <cmath>
 
+namespace {
+static float shapePeak(float peak) {
+    // Lift the noise floor a touch so quiet passages still have texture.
+    return qBound(0.0f, (float)std::pow(qMax(peak, 0.0f), 0.72f) * 1.12f, 1.0f);
+}
+} // namespace
+
 WaveformWidget::WaveformWidget(QWidget* parent) : QWidget(parent) {
     setMinimumHeight(56);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 }
 
-static float shapePeak(float peak) {
-    return qBound(0.0f, (float)std::pow(qMax(peak, 0.0f), 0.72f) * 1.12f, 1.0f);
-}
-
 void WaveformWidget::pushPeak(float peak) {
-    m_bins.push_back(shapePeak(peak));
-    while ((int)m_bins.size() > 240) m_bins.pop_front();
-    update();
+    pushPeaks({peak});
 }
 
 void WaveformWidget::pushPeaks(const std::vector<float>& peaks) {
     for (float p : peaks) {
-        m_bins.push_back(shapePeak(p));
+        // Fast attack, slow decay envelope on each bin.
+        const float shaped = shapePeak(p);
+        if (shaped > m_envelope) m_envelope = shaped;
+        else                     m_envelope += (shaped - m_envelope) * 0.22f;
+        m_bins.push_back(m_envelope);
         while ((int)m_bins.size() > 240) m_bins.pop_front();
     }
     if (!peaks.empty()) update();
@@ -33,11 +38,14 @@ void WaveformWidget::pushPeaks(const std::vector<float>& peaks) {
 
 void WaveformWidget::clear() {
     m_bins.clear();
+    m_envelope = 0.0f;
     update();
 }
 
 void WaveformWidget::setActive(bool active) {
+    if (m_active == active) return;
     m_active = active;
+    if (!m_active) m_envelope = 0.0f;
     update();
 }
 
@@ -47,58 +55,59 @@ void WaveformWidget::paintEvent(QPaintEvent*) {
 
     const QRectF r = rect();
     const qreal cy = r.height() / 2.0;
-    const qreal maxHalf = (r.height() - 14.0) / 2.0;   // bar half-height at full scale
+    const qreal maxHalf = (r.height() - 14.0) / 2.0;
 
     // Panel
     QPainterPath panel;
     panel.addRoundedRect(r, 12, 12);
     QLinearGradient panelBg(0, 0, 0, r.height());
-    panelBg.setColorAt(0.0, QColor(0x16, 0x16, 0x1F));
-    panelBg.setColorAt(1.0, QColor(0x11, 0x11, 0x17));
+    panelBg.setColorAt(0.0, QColor(0x1E, 0x20, 0x26));
+    panelBg.setColorAt(1.0, QColor(0x18, 0x1A, 0x20));
     p.fillPath(panel, panelBg);
 
-    // Hairline border
-    p.setPen(QPen(QColor(255, 255, 255, 13), 1));
+    p.setPen(QPen(QColor(255, 255, 255, 12), 1));
     p.setBrush(Qt::NoBrush);
     p.drawRoundedRect(r.adjusted(0.5, 0.5, -0.5, -0.5), 12, 12);
 
-    // Center guide line
-    p.setPen(QPen(QColor(0x2A, 0x2A, 0x36), 1, Qt::DashLine));
+    // dB gridlines at roughly -12 dB and -24 dB (faint)
+    auto drawGrid = [&](qreal level, int alpha) {
+        const qreal half = maxHalf * (1.0 - level);
+        p.setPen(QPen(QColor(0x3A, 0x3F, 0x4B, alpha), 1, Qt::SolidLine));
+        p.drawLine(QPointF(14, cy - half), QPointF(r.width() - 14, cy - half));
+        p.drawLine(QPointF(14, cy + half), QPointF(r.width() - 14, cy + half));
+    };
+    drawGrid(0.25, 90);   // ~ -12 dB
+    drawGrid(0.50, 45);   // ~ -24 dB
+
+    // Center line
+    p.setPen(QPen(QColor(0x39, 0x3F, 0x4C), 1, Qt::DashLine));
     p.drawLine(QPointF(14, cy), QPointF(r.width() - 14, cy));
 
-    const int barCount = 96;                  // bars to render (bins are resampled)
+    const int barCount = 96;
     const qreal slot = (r.width() - 28.0) / barCount;
     const qreal barW = qMax(2.2, slot * 0.52);
 
     if (m_bins.empty()) {
-        // Idle: dim flat pill
         p.setPen(Qt::NoPen);
-        p.setBrush(QColor(0x2B, 0x2B, 0x38));
+        p.setBrush(QColor(0x2B, 0x2E, 0x38));
         p.drawRoundedRect(QRectF(14, cy - 1.5, r.width() - 28, 3), 1.5, 1.5);
         return;
     }
 
-    // Resample the rolling history to barCount bars (nearest, newest at right).
     const int n = (int)m_bins.size();
     for (int i = 0; i < barCount; ++i) {
         const int bin = (int)((qint64)i * n / barCount);
         const float v = qBound(0.0f, m_bins[(size_t)bin], 1.0f);
         const qreal half = qMax<qreal>(1.6, v * maxHalf);
 
-        // Newest bars brighter.
-        const qreal age = (n <= 1) ? 1.0 : (qreal)(bin) / (n - 1);
-        const int alpha = int(110 + 145 * age);
+        // Newest bars are brighter; shape each bar with a vertical white gradient.
+        const qreal age = (n <= 1) ? 1.0 : (qreal)bin / (n - 1);
+        const int alpha = int(105 + 150 * age);
 
         QLinearGradient g(0, cy - half, 0, cy + half);
-        QColor top(az::CYAN);
-        QColor mid(az::VIOLET);
-        QColor bot(az::VIOLET);
-        top.setAlpha(alpha);
-        mid.setAlpha(alpha);
-        bot.setAlpha(alpha);
-        g.setColorAt(0.0, top);
-        g.setColorAt(0.45, mid);
-        g.setColorAt(1.0, QColor(0x4C, 0x2F, 0xB8, alpha));
+        g.setColorAt(0.0, QColor(0xF2, 0xF4, 0xF7, alpha));   // light near tops
+        g.setColorAt(0.45, QColor(0xC7, 0xCB, 0xD4, alpha));
+        g.setColorAt(1.0, QColor(0x6E, 0x74, 0x82, alpha));
 
         p.setPen(Qt::NoPen);
         p.setBrush(g);
@@ -106,12 +115,13 @@ void WaveformWidget::paintEvent(QPaintEvent*) {
         p.drawRoundedRect(QRectF(x, cy - half, barW, half * 2.0), barW / 2.0, barW / 2.0);
     }
 
-    // Subtle outer glow on strong signal (cheap: translucent ellipse at right edge).
+    // Slight panel glow on hot signal (soft white rim)
     const float recent = m_bins.back();
     if (recent > 0.55f) {
-        QColor glow(az::VIOLET);
-        glow.setAlpha((int)((recent - 0.55f) * 90));
-        p.setBrush(glow);
-        p.drawRoundedRect(r, 12, 12);
+        QColor glow(0xE9, 0xEC, 0xF1);
+        glow.setAlpha((int)((recent - 0.55f) * 70));
+        p.setPen(QPen(glow, 1.6));
+        p.setBrush(Qt::NoBrush);
+        p.drawRoundedRect(r.adjusted(0.8, 0.8, -0.8, -0.8), 12, 12);
     }
 }

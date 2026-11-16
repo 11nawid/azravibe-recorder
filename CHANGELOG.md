@@ -22,6 +22,24 @@ and the project uses [Semantic Versioning](https://semver.org/).
   `mingw-w64` against the real Windows SDK headers: wrong `ReleaseFrame()`
   signature and wrong `DEVICE_STATE_ACTIVE` constant name.
 
+## [1.3.0] - 2026-11-16
+
+### Added
+- **Always-on live preview** — the preview panel now streams the selected
+  display/monitor/window *before* you press Record (30 fps), and stays live
+  while idle and paused; no more pressing Record just to see what you picked.
+- **Monochrome OBS-inspired reskin** — flat dark panels, white-on-gray glyphs,
+  muted steel accents; record button remains the single red focal point.
+
+### Changed
+- **Video quality restored to pro-grade**: libx264 preset `faster`, CRF 18,
+  NVENC preset `p5`/`cq 18`, AAC bumped to 192 kbps, hard VBV caps at 25/50 Mbps
+  (~90–190 MB/min at 4K — no more multi-GB takes).
+- **Waveform upgraded**: attack/decay envelope (fast rise, smooth fall), bar
+  history auto-resamples to 96 bars, faint dB guide lines (−12/−24 dB), and a
+  rim glow on hot signal; white-on-gray matches the new skin.
+- `README.md` now documents which platforms are tested vs beta clearly.
+
 ## [1.2.0] - 2026-11-16
 
 ### Added

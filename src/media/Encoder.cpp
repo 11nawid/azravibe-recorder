@@ -120,16 +120,21 @@ bool Encoder::addVideoStream() {
         av_opt_set(m_vctx->priv_data, "crf", crf, 0);
         av_opt_set(m_vctx->priv_data, "bframes", "0", 0);
         av_opt_set(m_vctx->priv_data, "tune", "zerolatency", 0);
+        m_vctx->bit_rate = (int64_t)m_cfg.maxrateKbps * 1000;
+        m_vctx->rc_buffer_size = m_cfg.bufsizeKbps * 1000;
     } else if (m_videoCodecName == "h264_nvenc") {
         char cq[16];
         std::snprintf(cq, sizeof(cq), "%d", m_cfg.crf);
-        av_opt_set(m_vctx->priv_data, "preset", "p4", 0);      // balanced quality/speed
+        av_opt_set(m_vctx->priv_data, "preset", "p5", 0);
         av_opt_set(m_vctx->priv_data, "rc", "vbr", 0);
         av_opt_set(m_vctx->priv_data, "cq", cq, 0);
+        av_opt_set(m_vctx->priv_data, "maxrate", "25M", 0);
+        av_opt_set(m_vctx->priv_data, "bufsize", "50M", 0);
         av_opt_set(m_vctx->priv_data, "b_ref_mode", "disabled", 0);
         av_opt_set(m_vctx->priv_data, "zerolatency", "1", 0);
     } else {
-        m_vctx->bit_rate = (int64_t)m_cfg.fallbackVideoKbps * 1000;
+        m_vctx->bit_rate = (int64_t)m_cfg.maxrateKbps * 1000;
+        m_vctx->rc_buffer_size = m_cfg.bufsizeKbps * 1000;
     }
     return true;
 }

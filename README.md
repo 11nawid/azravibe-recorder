@@ -11,7 +11,7 @@ frameless, human-designed interface.
 <img src="docs/screenshot.png" alt="Azravibe Recorder — minimal 4K Linux screen recorder UI" width="620"/>
 
 [![License](https://img.shields.io/badge/license-MIT-a78bfa?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v1.2.0-22d3ee?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v1.3.0-22d3ee?style=flat-square)](CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20X11-2a2a35?style=flat-square)](https://x.org/)
 [![Language](https://img.shields.io/badge/language-C%2B%2B17-8b5cf6?style=flat-square)](https://isocpp.org/)
 [![Qt](https://img.shields.io/badge/toolkit-Qt%206-41cd52?style=flat-square)](https://www.qt.io/)
@@ -23,6 +23,12 @@ frameless, human-designed interface.
 
 </div>
 
+> ⚠️ **Platform status:** Linux (X11) is fully tested. Windows 10/11 and macOS builds
+> are produced by CI on every release but are **not yet validated on real hardware** —
+> treat those builds as beta and report issues on the issue tracker.
+
+---
+
 ---
 
 ## Why another screen recorder?
@@ -32,11 +38,13 @@ gigabyte, or two-knob CLI tools with no soul. **Azravibe Recorder is neither.**
 It is a single native binary — C++17 + Qt 6 — that gives you a **beautiful,
 productive** recording workflow in ~160 MB of RAM:
 
+- 👁️ **Live preview even when not recording** — watch any display, monitor or window before you hit record; pick a target from the dropdowns and see it instantly
 - 🎥 **Real 4K UHD (3840×2160)** recording with lanczos upscale, NVENC on your GPU
 - 🌊 **Live, real audio waveform** — actual PCM peaks, not a fake animation
 - 🖱️ **Cursor baked in** — pointer visible in recordings (toggle with ✓ Cursor)
 - ⏸️ **Pause/Resume** — wall-clock timeline keeps audio & video perfectly in sync
 - 🖥️ **Three capture targets** — entire display · per-monitor (RandR) · any window
+- 🎚️ **Hot-swap audio source mid-recording** — mic ↔ system audio, live
 - 🗂️ **Choose your output folder** — one glance shows exactly where files go
 - 🔔 **Minimize keeps recording** — close the window, it never stops your capture
 - 🚫 **Zero Electron, zero cloud, zero account** — completely local & private
@@ -53,9 +61,9 @@ productive** recording workflow in ~160 MB of RAM:
 
 | Platform | File | Notes |
 |---|---|---|
-| Windows 10/11 (64-bit) | **`azravibe-recorder-1.2.0-setup.exe`** | One-click installer, Start Menu + desktop shortcut |
-| Linux (Debian / Ubuntu / Mint, X11) | **`azravibe-recorder_1.2.0_amd64.deb`** | `sudo dpkg -i …` — menu entry included |
-| macOS (Apple Silicon & Intel) | **`azravibe-recorder-1.2.0.dmg`** | Drag to Applications; allow in Privacy → Screen Recording |
+| Windows 10/11 (64-bit) | **`azravibe-recorder-1.3.0-setup.exe`** | One-click installer, Start Menu + desktop shortcut |
+| Linux (Debian / Ubuntu / Mint, X11) | **`azravibe-recorder_1.3.0_amd64.deb`** | `sudo dpkg -i …` — menu entry included |
+| macOS (Apple Silicon & Intel) | **`azravibe-recorder-1.3.0.dmg`** | Drag to Applications; allow in Privacy → Screen Recording |
 
 Get them from the [Releases](https://github.com/11nawid/azravibe-recorder/releases) page.
 
@@ -124,6 +132,12 @@ configurable in-app and persisted in `QSettings`).
 |---|---|---|
 | Video | H.264 (NVENC or libx264), 3840×2160 | MP4 (faststart) |
 | Audio | AAC 48 kHz stereo, 160 kbps | MP4 |
+
+### Platform support
+- **Linux (X11)** — fully tested and supported (Linux Mint / Ubuntu family, Cinnamon tested).
+- **Windows 10/11** — builds ship from CI on every `v*` tag, but have **not been run on real Windows hardware yet**. Treat as beta.
+- **macOS (Apple Silicon & Intel)** — same: builds ship, hardware validation pending. Microphone capture only; system-audio loopback is on the roadmap.
+- **Wayland** — not supported yet (needs the PipeWire/XDG portal path).
 
 ## Roadmap
 

@@ -21,6 +21,6 @@ protected:
 
 private:
     std::deque<float> m_bins;         // newest at the back
+    float             m_envelope = 0.0f;   // attack/decay smoothing state
     bool              m_active = false;
-    int               m_phase  = 0;
 };

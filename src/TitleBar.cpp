@@ -23,18 +23,20 @@ void LogoMark::paintEvent(QPaintEvent*) {
 
     const QRectF r = rect();
     QLinearGradient g(0, 0, r.width(), r.height());
-    g.setColorAt(0.0, QColor(az::VIOLET));
-    g.setColorAt(1.0, QColor(az::CYAN));
+    g.setColorAt(0.0, QColor(0x2A2E37));
+    g.setColorAt(1.0, QColor(0x1D2027));
 
     QPainterPath path;
     path.addRoundedRect(r, 7, 7);
     p.fillPath(path, g);
+    p.setPen(QPen(QColor(255, 255, 255, 22), 1));
+    p.drawRoundedRect(r.adjusted(0.5, 0.5, -0.5, -0.5), 7, 7);
 
-    // Waveform bars (white)
-    p.setPen(Qt::NoPen);
-    p.setBrush(QColor(255, 255, 255, 235));
+    // Waveform bars (light gray) + red record dot
     const qreal cx = r.center().x();
     const qreal cy = r.center().y();
+    p.setPen(Qt::NoPen);
+    p.setBrush(QColor(0xE9, 0xEC, 0xF1));
     const qreal heights[5] = {6, 11, 15, 9, 5};
     const qreal barW = 2.6, gap = 2.2;
     const qreal totalW = 5 * barW + 4 * gap;
@@ -44,6 +46,10 @@ void LogoMark::paintEvent(QPaintEvent*) {
         p.drawRoundedRect(QRectF(x, cy - h / 2.0, barW, h), barW / 2.0, barW / 2.0);
         x += barW + gap;
     }
+
+    // Small red record dot top-right
+    p.setBrush(QColor(az::RED));
+    p.drawEllipse(QPointF(r.width() - 5.5, 5.5), 3.0, 3.0);
 }
 
 // ---------------- TitleBar ----------------

@@ -33,8 +33,8 @@ protected:
         const QRectF box(0, (height() - 18) / 2.0, 18, 18);
         if (m_checked) {
             QLinearGradient g(0, 0, box.width(), box.height());
-            g.setColorAt(0.0, QColor(0x8B, 0x5C, 0xF6));
-            g.setColorAt(1.0, QColor(0x22, 0xD3, 0xEE));
+            g.setColorAt(0.0, QColor(0x7B, 0x88, 0x9C));
+            g.setColorAt(1.0, QColor(0x4A, 0x56, 0x68));
             p.setPen(Qt::NoPen);
             p.setBrush(g);
             p.drawRoundedRect(box, 5.5, 5.5);

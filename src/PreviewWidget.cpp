@@ -77,10 +77,10 @@ void PreviewWidget::paintEvent(QPaintEvent*) {
     clip.addRoundedRect(outer, 16, 16);
     p.setClipPath(clip);
 
-    // ---- background ----
+    // ---- background (flat near-black) ----
     QLinearGradient bg(0, 0, 0, height());
-    bg.setColorAt(0.0, QColor(0x16, 0x16, 0x1F));
-    bg.setColorAt(1.0, QColor(0x0D, 0x0D, 0x13));
+    bg.setColorAt(0.0, QColor(0x17, 0x19, 0x1F));
+    bg.setColorAt(1.0, QColor(0x11, 0x12, 0x17));
     p.fillRect(outer, bg);
 
     // ---- content ----
@@ -93,34 +93,23 @@ void PreviewWidget::paintEvent(QPaintEvent*) {
         const int iy = (height() - ih) / 2;
         p.drawImage(QRect(ix, iy, iw, ih), m_frame);
     } else {
-        // Idle artwork: soft aurora glow + monitor glyph, no text.
+        // Idle artwork: flat slate monogram + monitor outline
         p.save();
         p.translate(width() / 2.0, height() / 2.0);
 
-        QRadialGradient glowA(QPointF(-width() * 0.18, -height() * 0.10), width() * 0.45);
-        glowA.setColorAt(0.0, QColor(139, 92, 246, 46));
-        glowA.setColorAt(1.0, QColor(139, 92, 246, 0));
-        p.fillRect(QRectF(-width(), -height(), 2 * width(), 2 * height()), glowA);
+        QLinearGradient glyph(QPointF(-80, 0), QPointF(80, 0));
+        glyph.setColorAt(0.0, QColor(0xC9, 0xCD, 0xD6));
+        glyph.setColorAt(1.0, QColor(0x7B, 0x82, 0x92));
 
-        QRadialGradient glowB(QPointF(width() * 0.20, height() * 0.16), width() * 0.42);
-        glowB.setColorAt(0.0, QColor(34, 211, 238, 40));
-        glowB.setColorAt(1.0, QColor(34, 211, 238, 0));
-        p.fillRect(QRectF(-width(), -height(), 2 * width(), 2 * height()), glowB);
-
-        QLinearGradient glyph(QPointF(-90, 0), QPointF(90, 0));
-        glyph.setColorAt(0.0, QColor(az::VIOLET));
-        glyph.setColorAt(1.0, QColor(az::CYAN));
         QPen pen(QBrush(glyph), 3.2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
         p.setPen(pen);
         p.setBrush(Qt::NoBrush);
 
-        // Monitor outline
         const QRectF screen(-84, -52, 168, 104);
         p.drawRoundedRect(screen, 10, 10);
-        // Stand + base
         p.drawLine(QPointF(0, 52), QPointF(0, 70));
         p.drawLine(QPointF(-34, 70), QPointF(34, 70));
-        // Play glyph inside
+
         QPainterPath play;
         play.moveTo(-12, -14);
         play.lineTo(16, 0);
@@ -192,7 +181,6 @@ void PreviewWidget::paintEvent(QPaintEvent*) {
 
         QColor bg(13, 13, 19, int(210 * m_toastAlpha));
         QColor fg(az::TEXT); fg.setAlphaF(m_toastAlpha);
-        QColor ok(az::CYAN); ok.setAlphaF(m_toastAlpha);
 
         QPainterPath chipPath;
         chipPath.addRoundedRect(chip, 15, 15);
@@ -201,7 +189,7 @@ void PreviewWidget::paintEvent(QPaintEvent*) {
         p.drawPath(chipPath);
 
         // Check glyph
-        QPen checkPen(ok, 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+        QPen checkPen(QColor(0xE9, 0xEC, 0xF1), 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
         p.setPen(checkPen);
         p.setBrush(Qt::NoBrush);
         const qreal cy = chip.center().y();

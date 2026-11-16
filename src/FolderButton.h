@@ -28,10 +28,10 @@ protected:
         p.setBrush(m_pressed ? QColor(0x1F, 0x1F, 0x2A) : (m_hover ? QColor(0x1E, 0x1E, 0x28) : QColor(0x1A, 0x1A, 0x23)));
         p.drawRoundedRect(r, 10, 10);
 
-        // Folder glyph: back plate + tab + front plate
+        // Folder glyph: matte slate strokes
         QLinearGradient g(0, 0, width(), 0);
-        g.setColorAt(0.0, QColor(0x8B, 0x5C, 0xF6));
-        g.setColorAt(1.0, QColor(0x22, 0xD3, 0xEE));
+        g.setColorAt(0.0, QColor(0xC7, 0xCB, 0xD4));
+        g.setColorAt(1.0, QColor(0x8A, 0x91, 0xA1));
         QPen pen(QBrush(g), 1.7, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
         p.setPen(pen);
         p.setBrush(Qt::NoBrush);

@@ -52,6 +52,10 @@ public:
     bool                autoStopRequested() const { return m_autoStopRequested.load(std::memory_order_acquire); }
     // GUI hint: render the preview pipeline (skipped while the app is minimized).
     void                setPreviewWanted(bool wanted) { m_previewWanted.store(wanted, std::memory_order_relaxed); }
+    // Stream the live preview chosen by the user (every target is previewed).
+    // Target specs: same shape as startRecording; safe while idle.
+    // Windows changes keep capturing at 60 Hz; failures close the preview.
+    bool setTarget(const TargetItem& target);
     // Where files are written (empty → MoviesLocation/Azravibe Recorder).
     void                setOutputDir(const QString& dir);
     QString             outputDir() const { return m_outputDir; }
@@ -70,26 +74,29 @@ private:
     std::atomic<State>   m_state{State::Idle};
     std::atomic<int64_t> m_mediaUs{0};
     std::atomic<bool>    m_stopRequested{false};
+    std::atomic<bool>    m_videoStopRequested{false};  // video thread lives for app lifetime
     std::atomic<bool>    m_audioStopRequested{false};  // hot-swap: only stop the audio thread
     std::atomic<bool>    m_autoStopRequested{false};
     std::atomic<bool>    m_previewWanted{true};
     std::atomic<bool>    m_cursorEnabled{true};
     std::atomic<int>     m_captureFailures{0};
 
+    mutable std::mutex       m_capturerMutex;   // guards m_capturer swap vs. grab
     std::thread m_videoThread;
     std::thread m_audioThread;
 
-    std::unique_ptr<CaptureBackend> m_capturer;  // created in startRecording()
+    std::unique_ptr<CaptureBackend> m_capturer;  // created in startRecording() / setTarget()
+    CaptureSpec      m_capturerSpec{};   // last spec opened (avoid re-open churn)
     AudioCapturer  m_audio;
     Encoder        m_encoder;
 
+    QString          m_audioSourceName;
     int  m_fps       = 30;
     int  m_sourceW   = 0;
     int  m_sourceH   = 0;
     int  m_previewW  = 0;   // scaled size for the preview pipeline
     int  m_previewH  = 0;
     bool m_audioActive = false;
-    QString m_audioSourceName;
 
     // media clock bookkeeping (video thread is the owner)
     std::chrono::steady_clock::time_point m_lastTick;

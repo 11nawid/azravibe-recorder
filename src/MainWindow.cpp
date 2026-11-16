@@ -50,6 +50,10 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent) {
     refreshTargets(false);
     refreshAudioSources(false);
 
+    // Start the live preview of the default target immediately.
+    if (!m_targets.isEmpty() && m_targetCombo->currentIndex() >= 0)
+        m_controller.setTarget(m_targets[m_targetCombo->currentIndex()]);
+
     // Restore persisted preferences (output folder + cursor toggle).
     {
         QSettings settings(QStringLiteral("azravibe"), QStringLiteral("azravibe-recorder"));
@@ -129,6 +133,13 @@ void MainWindow::buildUi() {
     m_audioCombo->setMaxVisibleItems(14);
     m_targetCombo->onAboutToShow = [this] { refreshTargets(true); };
     m_audioCombo->onAboutToShow  = [this] { refreshAudioSources(true); };
+    connect(m_targetCombo, &QComboBox::currentIndexChanged, this, [this](int) {
+        if (m_uiBusy) return;   // locked while recording
+        if (m_targets.isEmpty()) return;
+        const int idx = m_targetCombo->currentIndex();
+        if (idx >= 0 && idx < m_targets.size())
+            m_controller.setTarget(m_targets[idx]);
+    });
     connect(m_targetCombo, &QComboBox::currentTextChanged, this, [this](const QString& t) {
         m_targetCombo->setToolTip(t);
     });
