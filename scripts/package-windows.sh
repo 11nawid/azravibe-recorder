@@ -6,7 +6,7 @@ set -euo pipefail
 
 QT6_DIR="${1:?path to qt6 bin dir (e.g. C:/Qt/6.7.2/msvc2022_64)}"
 FFMPEG_DIR="${2:?path to ffmpeg root (include/ + lib/ + bin/)}"
-VERSION="${3:-1.3.1}"
+VERSION="${3:-1.3.2}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 STAGE="$ROOT/dist/windows-stage"
 

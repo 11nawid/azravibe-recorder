@@ -93,7 +93,8 @@ jobs:
       - name: Install dependencies
         run: |
           brew update
-          brew install qt@6 ffmpeg cmake rsvg-convert create-dmg
+          brew install qt@6 ffmpeg cmake create-dmg pkg-config
+          echo "PKG_CONFIG_PATH=/opt/homebrew/opt/ffmpeg/lib/pkgconfig:$PKG_CONFIG_PATH" >> "$GITHUB_ENV"
 
       - name: Compute version
         id: ver

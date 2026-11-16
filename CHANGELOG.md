@@ -132,3 +132,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 [1.2.0] - 2026-11-16 — Windows and macOS, plus CI release pipeline.
 [1.3.0] - 2026-11-16 — OBS-style skin, always-on live preview.
 [1.3.1] - 2026-11-16 — Live-preview rendering fix.
+
+## [1.3.2] - 2026-11-16
+
+### Fixed
+- Windows release: link `propsys` (required for `PKEY_Device_FriendlyName`).
+- macOS release: replace nonexistent Homebrew formula `rsvg-convert` with `pkg-config`;
+  expose Homebrew FFmpeg's `pkgconfig` path to CMake.
+
+## [1.3.1] - 2026-11-16

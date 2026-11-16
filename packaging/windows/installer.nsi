@@ -4,7 +4,7 @@
 
 !define APP_NAME "Azravibe Recorder"
 !define APP_EXE "azravibe-recorder.exe"
-!define APP_VERSION "1.3.1"
+!define APP_VERSION "1.3.2"
 !define APP_PUBLISHER "11nawid"
 
 Name "${APP_NAME}"
