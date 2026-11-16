@@ -46,7 +46,7 @@ QVector<TargetItem> listTargetsMac(uint64_t ownWindow) {
     }
 
     // ---- windows ----
-    CGWindowListCopyWindowInfo_Options opts = kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements;
+    CGWindowListOption opts = kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements;
     CFArrayRef windows = CGWindowListCopyWindowInfo(opts, kCGNullWindowID);
     if (windows) {
         const pid_t ownPid = getpid();

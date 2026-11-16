@@ -62,8 +62,8 @@ bool AudioCapturer::open(const QString& sourceName, int sampleRate, int channels
         m_state->input = m_state->engine.inputNode;
     }
 
-    AVAudioFormat* format = [AVAudioFormat standardFormatWithSampleRate:double(sampleRate)
-                                                                          channels:2];
+    AVAudioFormat* format = [[AVAudioFormat alloc] initWithStandardFormatWithSampleRate:double(sampleRate)
+                                                                                channels:2];
 
     AVAudioInputNode* input = m_state->input;
     [input installTapOnNode:input
