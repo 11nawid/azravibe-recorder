@@ -11,7 +11,7 @@ frameless, human-designed interface.
 <img src="docs/screenshot.png" alt="Azravibe Recorder — minimal 4K Linux screen recorder UI" width="620"/>
 
 [![License](https://img.shields.io/badge/license-MIT-a78bfa?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v1.3.4-22d3ee?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v1.4.0-22d3ee?style=flat-square)](CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20X11-2a2a35?style=flat-square)](https://x.org/)
 [![Language](https://img.shields.io/badge/language-C%2B%2B17-8b5cf6?style=flat-square)](https://isocpp.org/)
 [![Qt](https://img.shields.io/badge/toolkit-Qt%206-41cd52?style=flat-square)](https://www.qt.io/)
@@ -61,9 +61,9 @@ productive** recording workflow in ~160 MB of RAM:
 
 | Platform | File | Notes |
 |---|---|---|
-| Windows 10/11 (64-bit) | **`azravibe-recorder-1.3.4-setup.exe`** | One-click installer, Start Menu + desktop shortcut |
-| Linux (Debian / Ubuntu / Mint, X11) | **`azravibe-recorder_1.3.4_amd64.deb`** | `sudo dpkg -i …` — menu entry included |
-| macOS (Apple Silicon & Intel) | **`azravibe-recorder-1.3.4.dmg`** | Drag to Applications; allow in Privacy → Screen Recording |
+| Windows 10/11 (64-bit) | **`azravibe-recorder-1.4.0-setup.exe`** | One-click installer, Start Menu + desktop shortcut |
+| Linux (Debian / Ubuntu / Mint, X11) | **`azravibe-recorder_1.4.0_amd64.deb`** | `sudo dpkg -i …` — menu entry included |
+| macOS (Apple Silicon & Intel) | **`azravibe-recorder-1.4.0.dmg`** | Drag to Applications; allow in Privacy → Screen Recording |
 
 Get them from the [Releases](https://github.com/11nawid/azravibe-recorder/releases) page.
 
