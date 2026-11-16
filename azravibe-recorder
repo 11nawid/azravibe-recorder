@@ -5,7 +5,13 @@
 set -e
 
 DIR=$(CDPATH= cd -- "$(dirname -- "$(readlink -f -- "$0")")" && pwd)
-SYSROOT=/tmp/opencode/sysroot
+SYSROOT=""
+for CAND in /tmp/opencode/sysroot "$HOME/.local/opt/azravibe-recorder/sysroot"; do
+    if [ -d "$CAND/usr/lib/x86_64-linux-gnu" ]; then
+        SYSROOT="$CAND"
+        break
+    fi
+done
 
 BIN=""
 if [ -x "$DIR/azravibe-recorder.bin" ]; then
@@ -17,7 +23,7 @@ else
     exit 1
 fi
 
-if [ -d "$SYSROOT/usr/lib/x86_64-linux-gnu" ]; then
+if [ -n "$SYSROOT" ]; then
     export LD_LIBRARY_PATH="$SYSROOT/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH:-}"
     export QT_PLUGIN_PATH="$SYSROOT/usr/lib/x86_64-linux-gnu/qt6/plugins"
 fi

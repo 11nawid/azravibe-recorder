@@ -4,6 +4,14 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] - 2026-11-16
+
+### Fixed
+- Launcher now falls back to `~/.local/opt/azravibe-recorder/sysroot` when the
+  build-time sysroot at `/tmp/opencode/sysroot` is absent (e.g. after reboot),
+  so installed/desktop launches keep working on machines without system Qt dev
+  packages.
+
 ## [1.0.0] - 2026-11-16
 
 ### Added
