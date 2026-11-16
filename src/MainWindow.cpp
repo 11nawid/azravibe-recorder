@@ -30,6 +30,7 @@ QString targetKey(const TargetItem& t) {
 
 MainWindow::MainWindow(QWidget* parent) : QWidget(parent) {
     setWindowFlags(Qt::FramelessWindowHint | Qt::Window);
+    setWindowTitle(QStringLiteral("Azravibe Recorder"));   // taskbar / Alt-Tab name
     setAttribute(Qt::WA_TranslucentBackground);
     setFixedSize(664, 680);
     setStyleSheet(az::styleSheet());
@@ -243,11 +244,12 @@ void MainWindow::stopRecording() {
     applyStateToWidgets();
 
     const QString err = m_controller.error();
-    if (!saved.isEmpty()) {
+    if (!err.isEmpty()) {
+        // Actionable first: why the take was short/empty (file is still finalized).
+        m_preview->showToast(err);
+    } else if (!saved.isEmpty()) {
         m_preview->showToast(QStringLiteral("Saved — %1").arg(fileNameOf(saved)));
         std::fprintf(stderr, "azravibe: recording saved -> %s\n", saved.toLocal8Bit().constData());
-    } else if (!err.isEmpty()) {
-        m_preview->showToast(err);
     } else {
         m_preview->showToast(QStringLiteral("Recording stopped."));
     }
