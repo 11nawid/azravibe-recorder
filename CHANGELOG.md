@@ -4,6 +4,33 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] - 2026-11-16
+
+### Added
+- **Windows support** (Windows 10/11, x64): DXGI Desktop Duplication for screens and
+  PrintWindow for windows; WASAPI loopback for system audio + WASAPI capture for
+  microphones; GDI cursor compositing; native `.exe` installer (NSIS).
+- **macOS support** (Apple Silicon & Intel): CGDisplayCreateImage fullscreen capture
+  and CGWindowList window capture; AVAudioEngine microphone input; native `.dmg`
+  (macdeployqt + ad-hoc signature).
+- Release pipeline (GitHub Actions) — `v*` tags produce `.deb`, Windows installer
+  (`azravibe-recorder-*-setup.exe`) and `.dmg` automatically and attach them to a release.
+- CMake build as the primary build system; `Makefile` kept for Linux dev.
+- Capture backends unified behind a platform-neutral `CaptureBackend` interface
+  (`createCaptureBackend()` / `listCaptureTargets()`), one codebase, one behavior.
+- Automated `.deb` control metadata with proper runtime dependencies, icon cache
+  refresh in postinst/postrm, and Start Menu shortcut on Windows.
+
+### Changed
+- Version numbering → 1.2.0 (cross-platform release).
+- Project is no longer Linux-only: same UI, same controls, same output everywhere.
+
+### Known limitations
+- macOS v1 records the microphone only — system-audio loopback via Core Audio
+  process taps is on the roadmap.
+- Windows / macOS builds are produced by CI; functional hard-testing on those
+  platforms is in progress (reports welcome).
+
 ## [1.1.1] - 2026-11-16
 
 ### Documentation

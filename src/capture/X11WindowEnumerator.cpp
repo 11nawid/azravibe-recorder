@@ -1,5 +1,6 @@
-#include "WindowEnumerator.h"
+#include "X11WindowEnumerator.h"
 
+#include "X11Headers.h"
 #include <cstdio>
 #include <cstring>
 
@@ -16,7 +17,7 @@ QString utf8FromProperty(const unsigned char* data, unsigned long n) {
 }
 } // namespace
 
-QString WindowEnumerator::windowTitle(Display* disp, Window w) {
+QString X11WindowEnumerator::windowTitle(Display* disp, Window w) {
     Atom netWmName = XInternAtom(disp, "_NET_WM_NAME", False);
     Atom utf8      = XInternAtom(disp, "UTF8_STRING", False);
 
@@ -32,7 +33,6 @@ QString WindowEnumerator::windowTitle(Display* disp, Window w) {
         if (!s.isEmpty()) return s;
     }
 
-    // Fallback: legacy WM_NAME.
     char* legacy = nullptr;
     if (XFetchName(disp, w, &legacy) && legacy) {
         QString s = QString::fromLocal8Bit(legacy).trimmed();
@@ -42,7 +42,7 @@ QString WindowEnumerator::windowTitle(Display* disp, Window w) {
     return QStringLiteral("(untitled window)");
 }
 
-bool WindowEnumerator::isSkippableWindowType(Display* disp, Window w) {
+bool X11WindowEnumerator::isSkippableWindowType(Display* disp, Window w) {
     Atom typeAtom   = XInternAtom(disp, "_NET_WM_WINDOW_TYPE", False);
     Atom desktop    = XInternAtom(disp, "_NET_WM_WINDOW_TYPE_DESKTOP", False);
     Atom dock       = XInternAtom(disp, "_NET_WM_WINDOW_TYPE_DOCK", False);
@@ -57,7 +57,7 @@ bool WindowEnumerator::isSkippableWindowType(Display* disp, Window w) {
     bool skip = false;
     if (XGetWindowProperty(disp, w, typeAtom, 0, 16, False, XA_ATOM,
                            &actualType, &fmt, &n, &after, &data) == Success && data && fmt == 32) {
-        Atom* atoms = reinterpret_cast<Atom*>(data);
+        const Atom* atoms = reinterpret_cast<const Atom*>(data);
         for (unsigned long i = 0; i < n; ++i) {
             if (atoms[i] == desktop || atoms[i] == dock || atoms[i] == splash ||
                 atoms[i] == toolbar || atoms[i] == menu) { skip = true; break; }
@@ -75,14 +75,14 @@ static bool stateHidden(Display* disp, Window w, Atom stateAtom, Atom hiddenAtom
     bool hidden = false;
     if (XGetWindowProperty(disp, w, stateAtom, 0, 64, False, XA_ATOM,
                            &actualType, &fmt, &n, &after, &data) == Success && data && fmt == 32) {
-        Atom* atoms = reinterpret_cast<Atom*>(data);
+        const Atom* atoms = reinterpret_cast<const Atom*>(data);
         for (unsigned long i = 0; i < n; ++i) if (atoms[i] == hiddenAtom) { hidden = true; break; }
     }
     if (data) XFree(data);
     return hidden;
 }
 
-QVector<TargetItem> WindowEnumerator::listScreens(Display* disp, Window root, int width, int height) {
+QVector<TargetItem> X11WindowEnumerator::listScreens(Display* disp, Window root, int width, int height) {
     QVector<TargetItem> out;
     TargetItem whole;
     whole.type = TargetItem::Type::Screen;
@@ -108,7 +108,7 @@ QVector<TargetItem> WindowEnumerator::listScreens(Display* disp, Window root, in
     return out;
 }
 
-QVector<TargetItem> WindowEnumerator::listWindows(Display* disp, Window root, Window ownWindow) {
+QVector<TargetItem> X11WindowEnumerator::listWindows(Display* disp, Window root, uint64_t ownWindow) {
     QVector<TargetItem> out;
     Atom listAtom  = XInternAtom(disp, "_NET_CLIENT_LIST", False);
     Atom stateAtom = XInternAtom(disp, "_NET_WM_STATE", False);
@@ -123,41 +123,44 @@ QVector<TargetItem> WindowEnumerator::listWindows(Display* disp, Window root, Wi
                            &actualType, &fmt, &n, &after, &data) != Success || !data)
         return out;
 
-    Window* windows = reinterpret_cast<Window*>(data);
+    const Window* windows = reinterpret_cast<const Window*>(data);
     for (unsigned long i = 0; i < n; ++i) {
-        Window w = windows[i];
-        if (w == ownWindow) continue;
+        const Window w = windows[i];
+        if ((uint64_t)w == ownWindow) continue;
         if (isSkippableWindowType(disp, w)) continue;
-        if (stateHidden(disp, w, stateAtom, hidden)) continue;  // minimized windows are not recordable
+        if (stateHidden(disp, w, stateAtom, hidden)) continue;
 
         XWindowAttributes attr{};
         if (XGetWindowAttributes(disp, w, &attr) == 0) continue;
         if (attr.width < kMinWindowSize || attr.height < kMinWindowSize) continue;
         if (attr.map_state != IsViewable) continue;
 
-        QString title = windowTitle(disp, w);
         TargetItem item;
         item.type = TargetItem::Type::Window;
-        item.window = w;
-        item.label = QStringLiteral("Window — %1").arg(title);
+        item.windowId = (uint64_t)w;
+        item.label = QStringLiteral("Window — %1").arg(windowTitle(disp, w));
         out << item;
     }
     XFree(data);
     return out;
 }
 
-QVector<TargetItem> WindowEnumerator::listTargets(Window ownWindow) {
+QVector<TargetItem> X11WindowEnumerator::listTargets(uint64_t ownWindow) {
     QVector<TargetItem> out;
     DisplayHandle h;
     if (!h) return out;
     Display* disp = h.d;
-    Window root = DefaultRootWindow(disp);
-    int screen = DefaultScreen(disp);
+    const Window root = DefaultRootWindow(disp);
+    const int screen = DefaultScreen(disp);
 
-    int width  = DisplayWidth(disp, screen);
-    int height = DisplayHeight(disp, screen);
+    const int width  = DisplayWidth(disp, screen);
+    const int height = DisplayHeight(disp, screen);
 
     out << listScreens(disp, root, width, height);
     out << listWindows(disp, root, ownWindow);
     return out;
+}
+
+QVector<TargetItem> listTargetsLinux(uint64_t ownWindow) {
+    return X11WindowEnumerator::listTargets(ownWindow);
 }

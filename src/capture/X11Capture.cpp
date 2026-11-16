@@ -1,22 +1,25 @@
-#include "ScreenCapturer.h"
+#include "X11Capture.h"
 
-#include "X11Headers.h"   // XShmGetImage / XShmCreateImage / XShmQueryExtension
+#include "X11Headers.h"   // XShmGetImage / XShmCreateImage / XShmQueryExtension / XFixesGetCursorImage
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <cstring>
 
-ScreenCapturer::ScreenCapturer() = default;
+X11Capture::X11Capture() = default;
 
-ScreenCapturer::~ScreenCapturer() { close(); }
+X11Capture::~X11Capture() { close(); }
 
-bool ScreenCapturer::open(const CaptureSpec& spec) {
+std::unique_ptr<CaptureBackend> createCaptureBackendLinux() {
+    return std::make_unique<X11Capture>();
+}
+
+bool X11Capture::open(const CaptureSpec& spec) {
     close();
     m_spec = spec;
     m_disp = XOpenDisplay(nullptr);
     if (!m_disp) return false;
     m_root = DefaultRootWindow(m_disp);
 
-    // Detect channel order once from the root window's visual masks.
     XWindowAttributes rootAttr{};
     if (XGetWindowAttributes(m_disp, m_root, &rootAttr) == 0) { close(); return false; }
 
@@ -26,7 +29,7 @@ bool ScreenCapturer::open(const CaptureSpec& spec) {
     else
         m_format = RawPixelFormat::RGB0;
 
-    if (m_spec.window == 0 && m_spec.region.isEmpty())
+    if (m_spec.windowId == 0 && m_spec.region.isEmpty())
         m_spec.region = QRect(0, 0, DisplayWidth(m_disp, DefaultScreen(m_disp)),
                                    DisplayHeight(m_disp, DefaultScreen(m_disp)));
     m_buffer.reserve((size_t)DisplayWidth(m_disp, DefaultScreen(m_disp))
@@ -39,7 +42,7 @@ bool ScreenCapturer::open(const CaptureSpec& spec) {
     return true;
 }
 
-void ScreenCapturer::close() {
+void X11Capture::close() {
     destroyShm();
     if (m_disp) { XCloseDisplay(m_disp); m_disp = nullptr; }
     m_buffer.clear();
@@ -47,11 +50,11 @@ void ScreenCapturer::close() {
     m_w = m_h = m_stride = 0;
 }
 
-void ScreenCapturer::destroyShm() {
+void X11Capture::destroyShm() {
     if (!m_disp) return;
     if (m_shmImage) {
         if (m_shmAttached) XShmDetach(m_disp, &m_shm);
-        XDestroyImage(m_shmImage);              // does not free shmaddr
+        XDestroyImage(m_shmImage);
         m_shmImage = nullptr;
     }
     if (m_shmAttached) {
@@ -62,15 +65,16 @@ void ScreenCapturer::destroyShm() {
     m_shmW = m_shmH = 0;
 }
 
-bool ScreenCapturer::resolveWindowRect(QRect& out, bool& ok) const {
+bool X11Capture::resolveWindowRect(QRect& out, bool& ok) const {
+    const Window win = (Window)m_spec.windowId;
     XWindowAttributes attr{};
-    if (XGetWindowAttributes(m_disp, m_spec.window, &attr) == 0 || attr.map_state != IsViewable) {
+    if (XGetWindowAttributes(m_disp, win, &attr) == 0 || attr.map_state != IsViewable) {
         ok = false;
         return false;
     }
     Window child = 0;
     int absX = 0, absY = 0;
-    if (XTranslateCoordinates(m_disp, m_spec.window, m_root, 0, 0, &absX, &absY, &child) == 0) {
+    if (XTranslateCoordinates(m_disp, win, m_root, 0, 0, &absX, &absY, &child) == 0) {
         ok = false;
         return false;
     }
@@ -79,11 +83,11 @@ bool ScreenCapturer::resolveWindowRect(QRect& out, bool& ok) const {
     return true;
 }
 
-bool ScreenCapturer::grab() {
+bool X11Capture::grab() {
     if (!m_disp) return false;
 
     QRect region = m_spec.region;
-    if (m_spec.window != 0) {
+    if (m_spec.windowId != 0) {
         bool ok = false;
         QRect r;
         if (!resolveWindowRect(r, ok) || !ok) return false;   // window gone/minimized
@@ -92,7 +96,6 @@ bool ScreenCapturer::grab() {
         region = r.intersected(rootRect);
         if (region.width() < 2 || region.height() < 2) return false;
     }
-    // Even dimensions for yuv420p.
     region.setWidth(region.width() & ~1);
     region.setHeight(region.height() & ~1);
     if (region.width() < 2 || region.height() < 2) return false;
@@ -103,14 +106,13 @@ bool ScreenCapturer::grab() {
     return captured;
 }
 
-void ScreenCapturer::blendCursor(const QRect& capturedRegion) {
+void X11Capture::blendCursor(const QRect& capturedRegion) {
     XFixesCursorImage* img = XFixesGetCursorImage(m_disp);
     if (!img) return;
 
     const int iw = (int)img->width, ih = (int)img->height;
     if (iw <= 0 || ih <= 0) { XFree(img); return; }
 
-    // Cursor image coords (root-relative) → buffer-relative.
     const int x0 = img->x - capturedRegion.x() - (int)img->xhot;
     const int y0 = img->y - capturedRegion.y() - (int)img->yhot;
     const bool rgbFirst = (m_format == RawPixelFormat::RGB0);
@@ -138,15 +140,15 @@ void ScreenCapturer::blendCursor(const QRect& capturedRegion) {
     XFree(img);
 }
 
-bool ScreenCapturer::grabRegion(const QRect& r) {
+bool X11Capture::grabRegion(const QRect& r) {
     if (m_shmSupported) {
         if (grabShm(r)) return true;
-        m_shmSupported = false;   // permanent fallback for this session
+        m_shmSupported = false;
     }
     return grabFallback(r);
 }
 
-bool ScreenCapturer::ensureShm(int w, int h) {
+bool X11Capture::ensureShm(int w, int h) {
     if (m_shmImage && m_shmW == w && m_shmH == h) return true;
     destroyShm();
 
@@ -186,7 +188,7 @@ bool ScreenCapturer::ensureShm(int w, int h) {
     return true;
 }
 
-bool ScreenCapturer::grabShm(const QRect& r) {
+bool X11Capture::grabShm(const QRect& r) {
     if (!ensureShm(r.width(), r.height())) return false;
 
     if (!XShmGetImage(m_disp, m_root, m_shmImage, r.x(), r.y(), AllPlanes))
@@ -203,7 +205,7 @@ bool ScreenCapturer::grabShm(const QRect& r) {
     return true;
 }
 
-bool ScreenCapturer::grabFallback(const QRect& r) {
+bool X11Capture::grabFallback(const QRect& r) {
     XImage* img = XGetImage(m_disp, m_root, r.x(), r.y(),
                             (unsigned)r.width(), (unsigned)r.height(), AllPlanes, ZPixmap);
     if (!img) return false;

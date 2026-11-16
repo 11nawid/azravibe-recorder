@@ -1,0 +1,121 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake pkg-config dpkg-dev \
+            qt6-base-dev libx11-dev libxext-dev libxrandr-dev libxfixes-dev \
+            libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev \
+            libpulse-dev
+
+      - name: Compute version
+        id: ver
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build .deb
+        run: scripts/package-deb.sh "${{ steps.ver.outputs.version }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-deb
+          path: dist/*.deb
+
+  build-windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.2'
+          target: 'desktop'
+          arch: 'win64_msvc2022_64'
+
+      - name: Download prebuilt FFmpeg (full shared build)
+        shell: powershell
+        run: |
+          Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full-shared.7z" -OutFile "$env:TEMP\ffmpeg.7z"
+          7z x "$env:TEMP\ffmpeg.7z" -o"$env:TEMP\ffmpeg"
+          $dir = Get-ChildItem "$env:TEMP\ffmpeg" -Directory | Select-Object -First 1
+          echo "FFMPEG_DIR=$($dir.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install NSIS
+        run: choco install nsis -y --no-progress
+
+      - name: Configure & build
+        shell: cmd
+        run: |
+          cmake -B build-win -S . -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release -DFFMPEG_DIR=%FFMPEG_DIR%
+          cmake --build build-win --config Release
+
+      - name: Staging with windeployqt + FFmpeg DLLs
+        shell: cmd
+        run: |
+          mkdir dist\windows-stage
+          copy build-win\Release\azravibe-recorder.exe dist\windows-stage\
+          windeployqt --release --no-translations dist\windows-stage\azravibe-recorder.exe
+          xcopy /E /Y "%FFMPEG_DIR%\bin\*.dll" dist\windows-stage\
+          copy LICENSE dist\windows-stage\LICENSE.txt
+
+      - name: Build installer
+        shell: cmd
+        working-directory: packaging\windows
+        run: '"C:\Program Files (x86)\NSIS\makensis.exe" /DAZRAVIBE_DIR=..\..\dist\windows-stage installer.nsi'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: packaging/windows/azravibe-recorder-*-setup.exe
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew update
+          brew install qt@6 ffmpeg cmake rsvg-convert create-dmg
+
+      - name: Compute version
+        id: ver
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build macOS bundle + .dmg
+        run: scripts/package-macos.sh "${{ steps.ver.outputs.version }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: dist/*.dmg
+
+  publish:
+    name: Publish release
+    needs: [build-linux, build-windows, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: '*'
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: dist/**/*

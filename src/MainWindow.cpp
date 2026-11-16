@@ -32,7 +32,7 @@
 
 namespace {
 QString targetKey(const TargetItem& t) {
-    if (t.type == TargetItem::Type::Window) return QStringLiteral("w:%1").arg((quintptr)t.window);
+    if (t.type == TargetItem::Type::Window) return QStringLiteral("w:%1").arg((qulonglong)t.windowId);
     return QStringLiteral("s:%1:%2:%3:%4").arg(t.screenRect.x()).arg(t.screenRect.y())
                                             .arg(t.screenRect.width()).arg(t.screenRect.height());
 }
@@ -200,7 +200,7 @@ void MainWindow::refreshTargets(bool keepSelection) {
     if (m_uiBusy) return;   // locked while recording
 
     const QString previousKey = keepSelection ? m_targetKey : QString();
-    const QVector<TargetItem> items = WindowEnumerator::listTargets((Window)winId());
+    const QVector<TargetItem> items = listCaptureTargets((uint64_t)winId());
 
     m_targets = items;
     m_targetCombo->blockSignals(true);

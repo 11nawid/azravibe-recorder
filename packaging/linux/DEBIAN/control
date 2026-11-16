@@ -1,0 +1,25 @@
+Package: azravibe-recorder
+Version: 1.2.0
+Section: video
+Priority: optional
+Architecture: amd64
+Maintainer: 11nawid <11nawid@users.noreply.github.com>
+Depends: libqt6widgets6 | libqt6widgets6t64,
+         libqt6gui6 | libqt6gui6t64,
+         libqt6core6 | libqt6core6t64,
+         libavformat60 | libavformat61,
+         libavcodec60 | libavcodec61 | libavcodec62,
+         libswscale7 | libswscale8 | libswscale9,
+         libswresample4 | libswresample5 | libswresample6,
+         libavutil58 | libavutil59 | libavutil60,
+         libpulse0,
+         libx11-6,
+         libxext6,
+         libxrandr2,
+         libxfixes3,
+Description: Minimal 4K screen recorder for Linux (X11)
+ Azravibe Recorder is a fast, native screen recorder for Linux (X11).
+ Record your entire display, an individual monitor, or any window,
+ with system or microphone audio, saved as H.264/AAC MP4 with
+ cursor compositing and 4K UHD upscaling.
+ Homepage: https://github.com/11nawid/azravibe-recorder

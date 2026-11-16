@@ -5,9 +5,13 @@
 ```
 azravibe-recorder/
 ├── azravibe-recorder   # launcher (sets LD_LIBRARY_PATH/QT_PLUGIN_PATH for the sandbox sysroot)
-├── Makefile            # build / run / smoke / shot / install / uninstall
+├── CMakeLists.txt      # primary cross-platform build (Linux / Windows / macOS)
+├── Makefile            # Linux dev convenience (same objects, no cmake needed)
+├── .github/workflows/release.yml  # tagged releases → .deb / .exe installer / .dmg
 ├── assets/             # icon (SVG) + desktop entry
-├── docs/               # screenshot, this file
+├── docs/               # screenshot, this file, dev probe (docs/probe.cpp)
+├── packaging/          # linux DEBIAN/{control,postinst,postrm} · windows installer.nsi
+├── scripts/            # package-deb.sh · package-windows.sh · package-macos.sh
 └── src/
     ├── main.cpp            # entry point, debug env hooks
     ├── MainWindow.*        # window assembly, polling, shortcuts
@@ -20,12 +24,17 @@ azravibe-recorder/
     ├── PauseButton.*       # pause/resume button
     ├── RecorderController.*# threads, media clock, encode pipeline, handoff atomics
     ├── audio/
-    │   ├── AudioDevices.*  # source enumeration via `pactl -f json list sources`
-    │   └── AudioCapturer.* # pa_simple blocking read, 48 kHz S16 stereo
+    │   ├── AudioDevices.{h,*.cpp} # source enumeration: Pulse (pactl) / WASAPI / CoreAudio
+    │   └── AudioCapturer.{h,*.cpp,*.mm}  # 48 kHz S16 stereo pull-read, per-OS backend
     ├── capture/
-    │   ├── X11Headers.h    # central X11 include; pushes/pops macros that clash with Qt
-    │   ├── ScreenCapturer.*# MIT-SHM grab + XGetImage fallback, window-tracked regions
-    │   └── WindowEnumerator.* # EWMH _NET_CLIENT_LIST + RandR monitors
+    │   ├── Capture.{h,cpp}        # interface + factory (createCaptureBackend / listCaptureTargets)
+    │   ├── X11Headers.h            # Linux: pushes/pops macros that clash with Qt
+    │   ├── X11Capture.*            # Linux: MIT-SHM grab + XGetImage fallback, cursor via XFixes
+    │   ├── X11WindowEnumerator.*   # Linux: EWMH client list + RandR monitors
+    │   ├── WinCapture.*            # Windows: DXGI Desktop Duplication (screens) + PrintWindow (windows)
+    │   ├── WinWindowEnumerator.*   # Windows: EnumDisplayMonitors + EnumWindows
+    │   ├── MacCapture.{h,mm}       # macOS: CGDisplayCreateImage / CGWindowListCreateImage
+    │   └── MacWindowEnumerator.cpp # macOS: CGGetActiveDisplayList + CGWindowListCopyWindowInfo
     └── media/
         ├── Encoder.*       # avformat muxer: h264_nvenc/libx264/mpeg4 + aac/mp3/mp2, mp4/mkv
         └── RawPixel.h

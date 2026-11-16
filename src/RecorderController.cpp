@@ -81,26 +81,28 @@ bool RecorderController::startRecording(const TargetItem& target, const QString&
 
     CaptureSpec spec;
     if (target.type == TargetItem::Type::Window) {
-        spec.window = target.window;
+        spec.windowId = target.windowId;
         spec.region = target.screenRect.isEmpty() ? QRect(0, 0, 2, 2) : target.screenRect;
     } else {
-        spec.window = 0;
+        spec.windowId = 0;
         spec.region = target.screenRect;
     }
-    if (!m_capturer.open(spec)) {
+    m_capturer = createCaptureBackend();
+    if (!m_capturer || !m_capturer->open(spec)) {
         m_error = QStringLiteral("Could not open the capture session.");
+        m_capturer.reset();
         return false;
     }
-    m_capturer.setShowCursor(m_cursorEnabled.load(std::memory_order_relaxed));
+    m_capturer->setShowCursor(m_cursorEnabled.load(std::memory_order_relaxed));
 
     // Prime the first frame to learn the source size.
-    if (!m_capturer.grab()) {
+    if (!m_capturer->grab()) {
         m_error = QStringLiteral("Target window is not available.");
-        m_capturer.close();
+        m_capturer->close();
         return false;
     }
-    m_sourceW = m_capturer.width();
-    m_sourceH = m_capturer.height();
+    m_sourceW = m_capturer->width();
+    m_sourceH = m_capturer->height();
 
     // Decide where to save (user-picked folder, else default Movies location).
     QString dirPath;
@@ -113,7 +115,7 @@ bool RecorderController::startRecording(const TargetItem& target, const QString&
         dir = QDir(dirPath);
         if (!dir.exists() && !dir.mkpath(QStringLiteral("."))) {
             m_error = QStringLiteral("Output folder is not writable: %1").arg(dirPath);
-            m_capturer.close();
+            m_capturer->close();
             return false;
         }
     } else {
@@ -122,7 +124,7 @@ bool RecorderController::startRecording(const TargetItem& target, const QString&
         dir = QDir(baseDir + QStringLiteral("/Azravibe Recorder"));
         if (!dir.exists() && !dir.mkpath(QStringLiteral("."))) {
             m_error = QStringLiteral("Cannot create output folder.");
-            m_capturer.close();
+            m_capturer->close();
             return false;
         }
     }
@@ -141,7 +143,7 @@ bool RecorderController::startRecording(const TargetItem& target, const QString&
     cfg.outHeight  = ((int)(m_sourceH * scale)) & ~1;
     if (cfg.outWidth < 2 || cfg.outHeight < 2) {
         m_error = QStringLiteral("Output size computation failed.");
-        m_capturer.close();
+        m_capturer->close();
         return false;
     }
     cfg.sampleRate = 48000;
@@ -149,7 +151,7 @@ bool RecorderController::startRecording(const TargetItem& target, const QString&
 
     if (!m_encoder.open(path.toStdString(), cfg)) {
         m_error = QStringLiteral("Encoder failed: %1").arg(QString::fromStdString(m_encoder.error()));
-        m_capturer.close();
+        m_capturer->close();
         return false;
     }
 
@@ -214,7 +216,7 @@ void RecorderController::videoLoop() {
         const State s = state();
         if (s != State::Recording) continue;   // paused: clock frozen, ffmpeg idle
 
-        if (!m_capturer.grab()) {
+        if (!m_capturer->grab()) {
             if (m_captureFailures.fetch_add(1) >= 2) {
                 pushNotice(QStringLiteral("Target window disappeared — recording saved."));
                 m_autoStopRequested.store(true, std::memory_order_release);
@@ -224,11 +226,11 @@ void RecorderController::videoLoop() {
         }
 
         const int64_t mediaUs = m_mediaUs.load(std::memory_order_acquire);
-        const int w = m_capturer.width();
-        const int h = m_capturer.height();
-        const int stride = m_capturer.bytesPerLine();
+        const int w = m_capturer->width();
+        const int h = m_capturer->height();
+        const int stride = m_capturer->bytesPerLine();
 
-        if (!m_encoder.writeVideoFrame(m_capturer.data(), stride, w, h, m_capturer.format(), mediaUs)) {
+        if (!m_encoder.writeVideoFrame(m_capturer->data(), stride, w, h, m_capturer->format(), mediaUs)) {
             {
                 std::lock_guard<std::mutex> lock(m_errorMutex);
                 m_error = QStringLiteral("Encoding failed: %1").arg(QString::fromStdString(m_encoder.error()));
@@ -252,7 +254,7 @@ void RecorderController::videoLoop() {
             m_previewH = ph;
 
             m_swsPreview = sws_getCachedContext(nullptr, w, h,
-                                                m_capturer.format() == RawPixelFormat::BGR0 ? AV_PIX_FMT_BGR0 : AV_PIX_FMT_RGB0,
+                                                m_capturer->format() == RawPixelFormat::BGR0 ? AV_PIX_FMT_BGR0 : AV_PIX_FMT_RGB0,
                                                 pw, ph, AV_PIX_FMT_RGB24,
                                                 SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
             m_previewFrame = av_frame_alloc();
@@ -266,7 +268,7 @@ void RecorderController::videoLoop() {
         }
 
         if (m_swsPreview && m_previewFrame) {
-            const uint8_t* srcSlices[1] = { m_capturer.data() };
+            const uint8_t* srcSlices[1] = { m_capturer->data() };
             int srcStrideArr[1]         = { stride };
             sws_scale(m_swsPreview, srcSlices, srcStrideArr, 0, h, m_previewFrame->data, m_previewFrame->linesize);
             QImage img(m_previewFrame->data[0], pw, ph, m_previewFrame->linesize[0], QImage::Format_RGB888);
@@ -318,7 +320,7 @@ void RecorderController::stopRecording() {
     m_autoStopRequested.store(false, std::memory_order_release);
     m_audio.close();
     m_encoder.close();
-    m_capturer.close();
+    m_capturer->close();
 
     if (m_swsPreview) { sws_freeContext(m_swsPreview); m_swsPreview = nullptr; }
     if (m_previewFrame) { av_frame_free(&m_previewFrame); m_previewFrame = nullptr; }

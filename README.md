@@ -1,9 +1,9 @@
 <div align="center">
 
 # Azravibe Recorder
-### Free, Open-Source 4K Screen Recorder for Linux (X11)
+### Free, Open-Source 4K Screen Recorder — Windows · macOS · Linux
 
-**The aesthetic, zero-bloat screen recorder for Linux that just works.**
+**The aesthetic, zero-bloat screen recorder that just works — one binary per OS.**
 Record your screen, any monitor, or any window — in crisp **4K UHD** with
 real-time audio monitoring, a live waveform, hardware NVENC encoding and a
 frameless, human-designed interface.
@@ -11,7 +11,7 @@ frameless, human-designed interface.
 <img src="docs/screenshot.png" alt="Azravibe Recorder — minimal 4K Linux screen recorder UI" width="620"/>
 
 [![License](https://img.shields.io/badge/license-MIT-a78bfa?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v1.1.1-22d3ee?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v1.2.0-22d3ee?style=flat-square)](CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20X11-2a2a35?style=flat-square)](https://x.org/)
 [![Language](https://img.shields.io/badge/language-C%2B%2B17-8b5cf6?style=flat-square)](https://isocpp.org/)
 [![Qt](https://img.shields.io/badge/toolkit-Qt%206-41cd52?style=flat-square)](https://www.qt.io/)
@@ -43,38 +43,66 @@ productive** recording workflow in ~160 MB of RAM:
 
 ### Keywords
 `open source screen recorder` · `4k screen recorder linux` · `linux screencast` ·
-`x11 screen recorder` · `ubuntu screen recorder` · `screen recorder linux mint` ·
+`x11 screen recorder` · `windows screen recorder` · `mac screen recorder` · `ubuntu screen recorder` · `screen recorder linux mint` ·
 `record desktop with audio` · `free screen recorder linux` · `c++ screen recorder` ·
 `qt screen recorder` · `azravibe recorder`
 
 ---
 
-## Quick start
+## Download
+
+| Platform | File | Notes |
+|---|---|---|
+| Windows 10/11 (64-bit) | **`azravibe-recorder-1.2.0-setup.exe`** | One-click installer, Start Menu + desktop shortcut |
+| Linux (Debian / Ubuntu / Mint, X11) | **`azravibe-recorder_1.2.0_amd64.deb`** | `sudo dpkg -i …` — menu entry included |
+| macOS (Apple Silicon & Intel) | **`azravibe-recorder-1.2.0.dmg`** | Drag to Applications; allow in Privacy → Screen Recording |
+
+Get them from the [Releases](https://github.com/11nawid/azravibe-recorder/releases) page.
+
+## Quick start — from source
 
 ```bash
 git clone https://github.com/11nawid/azravibe-recorder.git
 cd azravibe-recorder
-make            # native build against your system Qt 6 & FFmpeg
-./azravibe-recorder
 ```
 
-**Requirements (Debian/Ubuntu/Mint):**
+**Linux (Debian/Ubuntu/Mint):**
 
 ```bash
-sudo apt install build-essential \
+sudo apt install build-essential cmake pkg-config \
   qt6-base-dev libx11-dev libxext-dev libxrandr-dev libxfixes-dev \
   libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev \
-  libpulse-dev pkg-config
+  libpulse-dev
+cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build
+./build/azravibe-recorder
 ```
 
-**Install it properly:**
+**Windows (Visual Studio 2022 + Qt 6.7 + prebuilt FFmpeg):**
+
+```powershell
+# Qt 6.7.2 MSVC 2022 64-bit from qt.io
+cmake -B build -G "Visual Studio 17 2022" -A x64 `
+      -DFFMPEG_DIR=C:/path/to/ffmpeg-full-shared
+cmake --build build --config Release
+```
+
+**macOS (Homebrew):**
 
 ```bash
-make install    # ~/.local/bin/azravibe-recorder + icon + .desktop entry
+brew install qt@6 ffmpeg cmake
+cmake -B build -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)"
+cmake --build build
 ```
 
-> NVIDIA users: make sure your driver is current — `h264_nvenc` is auto-detected
-> and used automatically; everything else falls back to libx264 with zero changes.
+**Install:**
+
+```bash
+make install              # Linux user install (~/.local/bin + .desktop)
+./scripts/package-deb.sh  # build Ubuntu/Debian .deb for release
+```
+
+> NVIDIA users: `h264_nvenc` is auto-detected and used at 4K for free;
+> otherwise everything falls back to libx264 automatically.
 
 ## Controls
 

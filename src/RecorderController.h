@@ -11,12 +11,12 @@
 #include <chrono>
 #include <cstdint>
 #include <deque>
+#include <memory>
 #include <mutex>
 #include <thread>
 #include <vector>
 
-#include "capture/ScreenCapturer.h"
-#include "capture/WindowEnumerator.h"
+#include "capture/Capture.h"
 #include "audio/AudioCapturer.h"
 #include "media/Encoder.h"
 
@@ -75,7 +75,7 @@ private:
     std::thread m_videoThread;
     std::thread m_audioThread;
 
-    ScreenCapturer m_capturer;
+    std::unique_ptr<CaptureBackend> m_capturer;  // created in startRecording()
     AudioCapturer  m_audio;
     Encoder        m_encoder;
 

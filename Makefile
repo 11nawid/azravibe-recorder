@@ -27,7 +27,8 @@ LDFLAGS  ?= -Wl,--no-undefined
 ifneq ($(wildcard $(SYSROOT)/usr/include),)
   # ---------- sysroot mode ----------
   QTROOT  := $(SYSROOT)/usr/include/x86_64-linux-gnu/qt6
-  INC     := -I$(QTROOT) -I$(QTROOT)/QtCore -I$(QTROOT)/QtGui -I$(QTROOT)/QtWidgets \
+  INC     := -Isrc \
+             -I$(QTROOT) -I$(QTROOT)/QtCore -I$(QTROOT)/QtGui -I$(QTROOT)/QtWidgets \
              -I$(SYSROOT)/usr/include/x86_64-linux-gnu \
              -I$(SYSROOT)/usr/include \
              -I$(SYSROOT)/usr/include/X11
@@ -44,12 +45,14 @@ else
   PKG_DEPS := Qt6Widgets Qt6Gui Qt6Core \
               x11 xext xrandr xfixes libpulse libpulse-simple \
               libavformat libavcodec libswscale libswresample libavutil
-  INC     := $(shell pkg-config --cflags-only-I $(PKG_DEPS)) -D_GLIBCXX_ASSERTIONS
+  INC     := -Isrc $(shell pkg-config --cflags-only-I $(PKG_DEPS)) -D_GLIBCXX_ASSERTIONS
   DEFS    := $(shell pkg-config --cflags-only-other $(PKG_DEPS))
   LIBS    := $(shell pkg-config --libs $(PKG_DEPS)) -ldl -lpthread
 endif
 
-SRC := $(wildcard src/*.cpp src/*/*.cpp)
+SRC := $(wildcard src/*.cpp src/media/*.cpp) \
+       src/capture/Capture.cpp src/capture/X11Capture.cpp src/capture/X11WindowEnumerator.cpp \
+       src/audio/AudioDevicesPulse.cpp src/audio/AudioCapturerPulse.cpp
 OBJ := $(patsubst src/%.cpp,build/obj/%.o,$(SRC))
 
 .PHONY: all clean run smoke shot install uninstall

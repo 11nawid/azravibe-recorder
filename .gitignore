@@ -1,7 +1,18 @@
 # Build output
 build/
+build-win/
+build-debug/
 *.o
 *.d
+
+# Packaging / release artifacts
+dist/
+*.exe
+*.dmg
+*.msi
+*.AppImage
+*.rpm
+*.pkg
 
 # Extracted sysroots / downloaded packages
 sysroot/
