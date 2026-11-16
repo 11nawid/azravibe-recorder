@@ -4,23 +4,13 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
 
-## [1.2.1] - 2026-11-16
-
-### Added
-- **Hot-swap audio source while recording** — the audio dropdown stays live during
-  recording; swapping between mic/system audio/device applies immediately (video
-  keeps recording, peaks reset, "Audio source switched" toast).
-- Verified release `.deb` builds end-to-end: control metadata, Depends, and
-  postinst/postrm desktop-database refresh (`dpkg-deb --info` clean).
-
-### Changed
-- Windows release job now builds with the **MinGW-w64** toolchain (self-contained,
-  no Visual C++ redistributable required on user machines) instead of MSVC.
+## [1.3.1] - 2026-11-16
 
 ### Fixed
-- Two real bugs in the Windows backend, caught by cross-compiling on Linux with
-  `mingw-w64` against the real Windows SDK headers: wrong `ReleaseFrame()`
-  signature and wrong `DEVICE_STATE_ACTIVE` constant name.
+- **Live preview never rendered** — the preview-build branch in `videoLoop` ran only
+  when the preview was hidden (inverted boolean), and `poll()` skipped the preview
+  path when idle. Both fixed; the preview now streams live in idle, paused and
+  recording states on real X11 sessions.
 
 ## [1.3.0] - 2026-11-16
 
@@ -39,6 +29,24 @@ and the project uses [Semantic Versioning](https://semver.org/).
   history auto-resamples to 96 bars, faint dB guide lines (−12/−24 dB), and a
   rim glow on hot signal; white-on-gray matches the new skin.
 - `README.md` now documents which platforms are tested vs beta clearly.
+
+## [1.2.1] - 2026-11-16
+
+### Added
+- **Hot-swap audio source while recording** — the audio dropdown stays live during
+  recording; swapping between mic/system audio/device applies immediately (video
+  keeps recording, peaks reset, "Audio source switched" toast).
+- Verified release `.deb` builds end-to-end: control metadata, Depends, and
+  postinst/postrm desktop-database refresh (`dpkg-deb --info` clean).
+
+### Changed
+- Windows release job now builds with the **MinGW-w64** toolchain (self-contained,
+  no Visual C++ redistributable required on user machines) instead of MSVC.
+
+### Fixed
+- Two real bugs in the Windows backend, caught by cross-compiling on Linux with
+  `mingw-w64` against the real Windows SDK headers: wrong `ReleaseFrame()`
+  signature and wrong `DEVICE_STATE_ACTIVE` constant name.
 
 ## [1.2.0] - 2026-11-16
 
@@ -90,14 +98,14 @@ and the project uses [Semantic Versioning](https://semver.org/).
 ### Fixed
 - Build system now defaults to the durable sysroot at
   `~/.local/opt/azravibe-recorder/sysroot` instead of the tmpfs path used during
-  initial development because tmpfs is wiped on reboot.
+  initial development.
 - `docs/probe.cpp` (media inspection helper) committed; `docs/screenshot.png` refreshed.
 
 ## [1.0.1] - 2026-11-16
 
 ### Fixed
 - Launcher now falls back to `~/.local/opt/azravibe-recorder/sysroot` when the
-  build-time sysroot (in tmpfs) is absent (e.g. after reboot),
+  build-time sysroot is absent (e.g. after reboot),
   so installed/desktop launches keep working on machines without system Qt dev
   packages.
 
@@ -120,3 +128,7 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - Desktop integration via `make install` (icon + .desktop file).
 
 [1.0.0] - 2026-11-16 — first tagged release.
+[1.1.0] - 2026-11-16 — 4K + cursor release.
+[1.2.0] - 2026-11-16 — Windows and macOS, plus CI release pipeline.
+[1.3.0] - 2026-11-16 — OBS-style skin, always-on live preview.
+[1.3.1] - 2026-11-16 — Live-preview rendering fix.

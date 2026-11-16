@@ -7,7 +7,7 @@
 # The GitHub Actions release workflow (.github/workflows/release.yml) uses this
 # file to produce the .deb / .exe installer / .dmg for tagged releases.
 cmake_minimum_required(VERSION 3.16)
-project(azravibe-recorder VERSION 1.3.0 LANGUAGES CXX C)
+project(azravibe-recorder VERSION 1.3.1 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
