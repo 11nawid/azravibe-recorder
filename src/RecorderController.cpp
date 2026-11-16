@@ -319,8 +319,8 @@ void RecorderController::videoLoop() {
         const int stride = m_capturer->bytesPerLine();
 
         // ---- preview build for ALL states (idle / paused / recording) ----
-        if (m_previewWanted.load(std::memory_order_relaxed)) {
-            // Stale frame kept on purpose; the GUI shows it when it comes back.
+        if (!m_previewWanted.load(std::memory_order_relaxed)) {
+            // Minimized / hidden: keep the last frame (poll re-enables it).
         } else {
         const int pw = qMin(512, w & ~1);
         const int ph = qMax(2, (int)std::llround((double)pw * h / (double)w) & ~1);

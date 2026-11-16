@@ -372,20 +372,18 @@ void MainWindow::poll() {
         return;
     }
 
-    if (!busy) {
-        // Idle: keep the preview calm; nothing to do.
-        return;
-    }
-
-    // Hot-swap audio source mid-recording (dropdown stays live).
-    const int curIdx = m_audioCombo->currentIndex();
-    if (curIdx != m_audioIndexAtStart && curIdx >= 0 && curIdx < m_audioSources.size()) {
-        const QString err = m_controller.setAudioSource(m_audioSources[curIdx].name);
-        if (err.isEmpty())
-            m_preview->showToast(QStringLiteral("Audio source switched"));
-        else
-            m_preview->showToast(err);
-        m_audioIndexAtStart = curIdx;
+    // Preview, waveform and notices stay live in every state (idle/paused/recording).
+    if (busy) {
+        // Hot-swap audio source mid-recording (dropdown stays live).
+        const int curIdx = m_audioCombo->currentIndex();
+        if (curIdx != m_audioIndexAtStart && curIdx >= 0 && curIdx < m_audioSources.size()) {
+            const QString err = m_controller.setAudioSource(m_audioSources[curIdx].name);
+            if (err.isEmpty())
+                m_preview->showToast(QStringLiteral("Audio source switched"));
+            else
+                m_preview->showToast(err);
+            m_audioIndexAtStart = curIdx;
+        }
     }
 
     // Preview frame (skip rendering entirely while minimized)
