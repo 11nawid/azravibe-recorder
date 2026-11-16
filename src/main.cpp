@@ -5,6 +5,7 @@
 //   AZRAVIBE_SMOKE_SECONDS=N     start recording automatically, stop after N seconds, print result, exit
 #include "MainWindow.h"
 #include "Style.h"
+#include "SingleInstance.h"
 
 #include <QApplication>
 #include <QTimer>
@@ -25,7 +26,18 @@ int main(int argc, char* argv[]) {
     appFont.setPixelSize(12);
     app.setFont(appFont);
 
+    // Single instance: if another Azravibe Recorder is already running, ask it to
+    // focus and exit quietly instead of opening a duplicate window.
+    SingleInstanceGuard single;
+    if (single.isSecondaryInstance()) {
+        return 0;
+    }
     MainWindow window;
+    single.onRaise = [&window] {
+        window.showNormal();       // also un-minimizes if the user minimized it
+        window.raise();
+        window.activateWindow();
+    };
     window.setStyleSheet(az::styleSheet());
 
     // ---- debug / smoke hooks ----

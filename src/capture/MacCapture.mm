@@ -66,7 +66,7 @@ bool MacCapture::ensureContext(int w, int h) {
     CGColorSpaceRef rgb = CGColorSpaceCreateDeviceRGB();
     m_context = CGBitmapContextCreate(
         m_contextBuf.data(), (size_t)w, (size_t)h, 8, (size_t)w * 4, rgb,
-        CGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little);
+        kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little);
     CGColorSpaceRelease(rgb);
     if (!m_context) { m_contextBuf.clear(); return false; }
     return true;

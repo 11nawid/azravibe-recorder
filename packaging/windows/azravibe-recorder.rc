@@ -1,3 +1,2 @@
-#include <windows.h>
-
-IDI_ICON1 ICON "..\\..\\..\\assets\\azravibe-recorder.ico"
+// Azravibe Recorder — application icon for the Windows executable.
+IDI_ICON1 ICON "../../assets/azravibe-recorder.ico"

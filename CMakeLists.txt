@@ -15,9 +15,14 @@ set(CMAKE_AUTOMOC OFF)
 
 if(APPLE)
     enable_language(OBJCXX)
+    # Apple's newest SDKs mark CGDisplayCreateImage/CGWindowListCreateImage as
+    # "unavailable in macOS 15"; pin the deployment target so the legacy capture
+    # path still compiles on current Xcode. ScreenCaptureKit migration is tracked
+    # as a follow-up.
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 14.0 CACHE STRING "Minimum macOS version" FORCE)
 endif()
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Network)
 
 set(AZRAVIBE_SOURCES
     src/main.cpp
@@ -77,7 +82,7 @@ elseif(WIN32)
 elseif(APPLE)
     list(APPEND AZRAVIBE_SOURCES
         src/capture/MacCapture.mm
-        src/capture/MacWindowEnumerator.cpp
+        src/capture/MacWindowEnumerator.mm
         src/audio/AudioDevicesMac.cpp
         src/audio/AudioCapturerMac.mm)
 
@@ -95,11 +100,11 @@ target_include_directories(azravibe-recorder PRIVATE src ${FFMPEG_INCLUDE_DIR})
 target_compile_definitions(azravibe-recorder PRIVATE QT_CORE_LIB QT_GUI_LIB QT_WIDGETS_LIB NDEBUG)
 
 if(APPLE)
-    target_link_libraries(azravibe-recorder PRIVATE Qt6::Widgets PkgConfig::FFMPEG
+    target_link_libraries(azravibe-recorder PRIVATE Qt6::Widgets Qt6::Network PkgConfig::FFMPEG
         "-framework CoreAudio" "-framework AudioToolbox" "-framework CoreGraphics"
         "-framework AppKit" "-framework AVFoundation" "-framework QuartzCore")
 else()
-    target_link_libraries(azravibe-recorder PRIVATE Qt6::Widgets ${AZRAVIBE_LINK_LIBS})
+    target_link_libraries(azravibe-recorder PRIVATE Qt6::Widgets Qt6::Network ${AZRAVIBE_LINK_LIBS})
 endif()
 
 # Desktop integration

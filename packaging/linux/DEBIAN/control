@@ -5,6 +5,7 @@ Priority: optional
 Architecture: amd64
 Maintainer: 11nawid <11nawid@users.noreply.github.com>
 Depends: libqt6widgets6 | libqt6widgets6t64,
+         libqt6network6 | libqt6network6t64,
          libqt6gui6 | libqt6gui6t64,
          libqt6core6 | libqt6core6t64,
          libavformat60 | libavformat61,

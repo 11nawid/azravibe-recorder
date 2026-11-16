@@ -28,21 +28,21 @@ ifneq ($(wildcard $(SYSROOT)/usr/include),)
   # ---------- sysroot mode ----------
   QTROOT  := $(SYSROOT)/usr/include/x86_64-linux-gnu/qt6
   INC     := -Isrc \
-             -I$(QTROOT) -I$(QTROOT)/QtCore -I$(QTROOT)/QtGui -I$(QTROOT)/QtWidgets \
+             -I$(QTROOT) -I$(QTROOT)/QtCore -I$(QTROOT)/QtGui -I$(QTROOT)/QtWidgets -I$(QTROOT)/QtNetwork \
              -I$(SYSROOT)/usr/include/x86_64-linux-gnu \
              -I$(SYSROOT)/usr/include \
              -I$(SYSROOT)/usr/include/X11
   LIBDIR  := $(SYSROOT)/usr/lib/x86_64-linux-gnu
   DEFS    := -DQT_CORE_LIB -DQT_GUI_LIB -DQT_WIDGETS_LIB -DNDEBUG
   LIBS    := -L$(LIBDIR) -Wl,-rpath,$(LIBDIR) \
-             -lQt6Widgets -lQt6Gui -lQt6Core \
+             -lQt6Widgets -lQt6Network -lQt6Gui -lQt6Core \
              -lavformat -lavcodec -lswscale -lswresample -lavutil \
              -lpulse -lpulse-simple -lX11 -lXext -lXrandr -lXfixes \
              -ldl -lm -lpthread
   CXXFLAGS += -fPIC
 else
   # ---------- system mode ----------
-  PKG_DEPS := Qt6Widgets Qt6Gui Qt6Core \
+  PKG_DEPS := Qt6Widgets Qt6Network Qt6Gui Qt6Core \
               x11 xext xrandr xfixes libpulse libpulse-simple \
               libavformat libavcodec libswscale libswresample libavutil
   INC     := -Isrc $(shell pkg-config --cflags-only-I $(PKG_DEPS)) -D_GLIBCXX_ASSERTIONS
