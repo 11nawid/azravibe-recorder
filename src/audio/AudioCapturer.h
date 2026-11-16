@@ -29,8 +29,10 @@ public:
     bool isOpen() const;
     QString error() const { return m_error; }
 
-private:
+    // Opaque per-platform state (defined in the backend translation unit).
     struct State;
+
+private:
     std::unique_ptr<State> m_state;
     int     m_rate     = 48000;
     int     m_channels = 2;

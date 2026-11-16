@@ -161,6 +161,7 @@ bool RecorderController::startRecording(const TargetItem& target, const QString&
 
     // Audio capture (best effort: video keeps recording even if audio fails).
     m_audioActive = m_audio.open(audioSourceName, 48000, 2);
+    m_audioSourceName = audioSourceName;
     if (!m_audioActive) {
         pushNotice(QStringLiteral("Audio unavailable — recording video only."));
     }
@@ -168,6 +169,7 @@ bool RecorderController::startRecording(const TargetItem& target, const QString&
     m_mediaUs.store(0, std::memory_order_release);
     m_lastTick = std::chrono::steady_clock::now();
     m_stopRequested.store(false, std::memory_order_release);
+    m_audioStopRequested.store(false, std::memory_order_release);
     m_autoStopRequested.store(false, std::memory_order_release);
     m_captureFailures.store(0, std::memory_order_release);
     {
@@ -192,6 +194,35 @@ void RecorderController::togglePause() {
         m_state.store(State::Paused, std::memory_order_release);
     else if (state() == State::Paused)
         m_state.store(State::Recording, std::memory_order_release);
+}
+
+QString RecorderController::setAudioSource(const QString& sourceName) {
+    if (state() == State::Idle) return {};           // selection applies on next start
+    if (sourceName == m_audioSourceName) return {};  // no-op
+
+    // Stop the audio thread cleanly (video keeps recording).
+    if (m_audioThread.joinable()) {
+        m_audioStopRequested.store(true, std::memory_order_release);
+        m_audioThread.join();
+        m_audioStopRequested.store(false, std::memory_order_release);
+    }
+    m_audio.close();
+    m_audioSourceName = sourceName;
+
+    m_audioActive = m_audio.open(m_audioSourceName, 48000, 2);
+    if (!m_audioActive) {
+        m_error = QStringLiteral("Audio unavailable: %1").arg(m_audio.error());
+        pushNotice(QStringLiteral("Audio switched off — %1").arg(m_audio.error()));
+        return m_error;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(m_peakMutex);
+        m_peaks.clear();   // drop stale bins from the previous source
+    }
+    pushNotice(QStringLiteral("Audio source switched"));
+    m_audioThread = std::thread(&RecorderController::audioLoop, this);
+    return {};
 }
 
 void RecorderController::tickMediaClock(std::chrono::steady_clock::time_point now) {
@@ -284,7 +315,8 @@ void RecorderController::audioLoop() {
     constexpr int kFramesPerBlock = 480;   // 10 ms @ 48 kHz
     int16_t block[480 * 2];
 
-    while (!m_stopRequested.load(std::memory_order_acquire)) {
+    while (!m_stopRequested.load(std::memory_order_acquire)
+           && !m_audioStopRequested.load(std::memory_order_acquire)) {
         if (!m_audio.read(block, kFramesPerBlock)) {
             pushNotice(QStringLiteral("Audio capture stopped unexpectedly."));
             break;

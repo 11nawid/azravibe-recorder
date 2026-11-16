@@ -16,7 +16,7 @@ Depends: libqt6widgets6 | libqt6widgets6t64,
          libx11-6,
          libxext6,
          libxrandr2,
-         libxfixes3,
+         libxfixes3
 Description: Minimal 4K screen recorder for Linux (X11)
  Azravibe Recorder is a fast, native screen recorder for Linux (X11).
  Record your entire display, an individual monitor, or any window,

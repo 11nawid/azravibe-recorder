@@ -111,6 +111,7 @@ make install              # Linux user install (~/.local/bin + .desktop)
 | Record button | Start / stop recording |
 | Pause button | Pause / resume (only while recording) |
 | `Ctrl+R` / `Ctrl+Space` / `Ctrl+Q` | Record · Pause · Quit |
+| Audio dropdown | Swap source **while recording** (mic ↔ system audio live) |
 | Title bar **—** | Minimize (**recording continues**) |
 | Title bar **✕** | Stop recording, finalize file, quit |
 

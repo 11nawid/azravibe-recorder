@@ -41,11 +41,15 @@ jobs:
 
       - uses: jurplel/install-qt-action@v4
         with:
-          version: '6.7.2'
+          version: '6.7.3'
           target: 'desktop'
-          arch: 'win64_msvc2022_64'
+          arch: 'win64_mingw'
+          cache: true
 
-      - name: Download prebuilt FFmpeg (full shared build)
+      - name: Install MinGW-w64 toolchain
+        run: choco install mingw -y --no-progress
+
+      - name: Download prebuilt FFmpeg (release shared build, gcc)
         shell: powershell
         run: |
           Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full-shared.7z" -OutFile "$env:TEMP\ffmpeg.7z"
@@ -56,17 +60,17 @@ jobs:
       - name: Install NSIS
         run: choco install nsis -y --no-progress
 
-      - name: Configure & build
+      - name: Configure & build (MinGW)
         shell: cmd
         run: |
-          cmake -B build-win -S . -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release -DFFMPEG_DIR=%FFMPEG_DIR%
-          cmake --build build-win --config Release
+          cmake -B build-win -S . -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DFFMPEG_DIR=%FFMPEG_DIR%
+          cmake --build build-win --parallel
 
       - name: Staging with windeployqt + FFmpeg DLLs
         shell: cmd
         run: |
           mkdir dist\windows-stage
-          copy build-win\Release\azravibe-recorder.exe dist\windows-stage\
+          copy build-win\azravibe-recorder.exe dist\windows-stage\
           windeployqt --release --no-translations dist\windows-stage\azravibe-recorder.exe
           xcopy /E /Y "%FFMPEG_DIR%\bin\*.dll" dist\windows-stage\
           copy LICENSE dist\windows-stage\LICENSE.txt

@@ -19,7 +19,7 @@ void enumerateEndpoints(EDataFlow flow, bool isMonitor, QVector<AudioSourceItem>
     if (FAILED(hr) || !enumerator) { error = QStringLiteral("Audio endpoint enumerator unavailable"); return; }
 
     IMMDeviceCollection* collection = nullptr;
-    hr = enumerator->EnumAudioEndpoints(flow, DEVICESTATE_ACTIVE, &collection);
+    hr = enumerator->EnumAudioEndpoints(flow, DEVICE_STATE_ACTIVE, &collection);
     if (FAILED(hr) || !collection) { enumerator->Release(); return; }   // fresh machine may have zero endpoints
 
     UINT count = 0;

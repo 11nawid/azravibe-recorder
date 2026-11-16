@@ -122,7 +122,7 @@ void MainWindow::buildUi() {
     m_targetCombo = new RefreshComboBox(body);
     m_audioCombo  = new RefreshComboBox(body);
     m_targetCombo->setToolTip(QStringLiteral("Choose what to record"));
-    m_audioCombo->setToolTip(QStringLiteral("Choose the audio source"));
+    m_audioCombo->setToolTip(QStringLiteral("Choose the audio source — you can switch this while recording"));
     m_targetCombo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     m_audioCombo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     m_targetCombo->setMaxVisibleItems(14);
@@ -222,7 +222,7 @@ void MainWindow::refreshTargets(bool keepSelection) {
 }
 
 void MainWindow::refreshAudioSources(bool keepSelection) {
-    if (m_uiBusy) return;
+    // Audio source list can refresh even while recording (needed for hot-swap).
 
     const QString previousKey = keepSelection ? m_audioKey : QString();
     m_audioSources = AudioDevices::listSources();
@@ -279,6 +279,7 @@ void MainWindow::startRecording() {
     m_wave->clear();
     m_wave->setActive(true);
     m_uiBusy = true;
+    m_audioIndexAtStart = m_audioCombo->currentIndex();
     syncEnabledState();
     applyStateToWidgets();
     std::fprintf(stderr, "azravibe: recording started -> %s\n",
@@ -309,7 +310,7 @@ void MainWindow::stopRecording() {
 
 void MainWindow::syncEnabledState() {
     m_targetCombo->setEnabled(!m_uiBusy);
-    m_audioCombo->setEnabled(!m_uiBusy);
+    m_audioCombo->setEnabled(true);   // always live — hot-swappable while recording
 }
 
 void MainWindow::applyStateToWidgets() {
@@ -363,6 +364,17 @@ void MainWindow::poll() {
     if (!busy) {
         // Idle: keep the preview calm; nothing to do.
         return;
+    }
+
+    // Hot-swap audio source mid-recording (dropdown stays live).
+    const int curIdx = m_audioCombo->currentIndex();
+    if (curIdx != m_audioIndexAtStart && curIdx >= 0 && curIdx < m_audioSources.size()) {
+        const QString err = m_controller.setAudioSource(m_audioSources[curIdx].name);
+        if (err.isEmpty())
+            m_preview->showToast(QStringLiteral("Audio source switched"));
+        else
+            m_preview->showToast(err);
+        m_audioIndexAtStart = curIdx;
     }
 
     // Preview frame (skip rendering entirely while minimized)

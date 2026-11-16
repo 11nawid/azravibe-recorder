@@ -32,10 +32,13 @@ public:
     RecorderController();
     ~RecorderController();
 
-    // target: from WindowEnumerator::listTargets(); audioSourceName: pulse source (may be empty).
+    // target: from Capture.h's listCaptureTargets(); audioSourceName: platform source (may be empty).
     bool startRecording(const TargetItem& target, const QString& audioSourceName);
     void togglePause();          // Recording <-> Paused (no-op when Idle)
     void stopRecording();        // blocks briefly; finalizes the file
+    // Swap the audio input mid-recording (mic ↔ system audio, pick another device, …).
+    // Only valid while recording; returns empty string on success else an error message.
+    QString setAudioSource(const QString& sourceName);
 
     State    state() const { return m_state.load(std::memory_order_acquire); }
     bool     isBusy() const { return state() != State::Idle; }
@@ -67,6 +70,7 @@ private:
     std::atomic<State>   m_state{State::Idle};
     std::atomic<int64_t> m_mediaUs{0};
     std::atomic<bool>    m_stopRequested{false};
+    std::atomic<bool>    m_audioStopRequested{false};  // hot-swap: only stop the audio thread
     std::atomic<bool>    m_autoStopRequested{false};
     std::atomic<bool>    m_previewWanted{true};
     std::atomic<bool>    m_cursorEnabled{true};
@@ -85,6 +89,7 @@ private:
     int  m_previewW  = 0;   // scaled size for the preview pipeline
     int  m_previewH  = 0;
     bool m_audioActive = false;
+    QString m_audioSourceName;
 
     // media clock bookkeeping (video thread is the owner)
     std::chrono::steady_clock::time_point m_lastTick;

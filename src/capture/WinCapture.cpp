@@ -226,10 +226,10 @@ bool WinCapture::grabDxgi() {
 
     Microsoft::WRL::ComPtr<ID3D11Texture2D> desktopTexture;
     hr = desktopResource.As(&desktopTexture);
-    if (FAILED(hr)) { m_dup->ReleaseFrame(nullptr); return false; }
+    if (FAILED(hr)) { m_dup->ReleaseFrame(); return false; }
 
     m_context->CopyResource(m_stagingTexture, desktopTexture.Get());
-    m_dup->ReleaseFrame(nullptr);
+    m_dup->ReleaseFrame();
 
     D3D11_MAPPED_SUBRESOURCE mapped{};
     hr = m_context->Map(m_stagingTexture, 0, D3D11_MAP_READ, 0, &mapped);

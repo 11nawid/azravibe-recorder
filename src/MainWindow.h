@@ -64,6 +64,7 @@ private:
     // Selection keys preserved across refreshes
     QString m_targetKey;
     QString m_audioKey;
+    int     m_audioIndexAtStart = -1;   // hot-swap detection while recording
 
     bool    m_uiBusy = false;        // cached "state != Idle"
     QString m_lastShownError;
