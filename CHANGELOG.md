@@ -27,14 +27,14 @@ and the project uses [Semantic Versioning](https://semver.org/).
 ### Fixed
 - Build system now defaults to the durable sysroot at
   `~/.local/opt/azravibe-recorder/sysroot` instead of the tmpfs path used during
-  initial development.
+  initial development because tmpfs is wiped on reboot.
 - `docs/probe.cpp` (media inspection helper) committed; `docs/screenshot.png` refreshed.
 
 ## [1.0.1] - 2026-11-16
 
 ### Fixed
 - Launcher now falls back to `~/.local/opt/azravibe-recorder/sysroot` when the
-  build-time sysroot at `/tmp/opencode/sysroot` is absent (e.g. after reboot),
+  build-time sysroot (in tmpfs) is absent (e.g. after reboot),
   so installed/desktop launches keep working on machines without system Qt dev
   packages.
 

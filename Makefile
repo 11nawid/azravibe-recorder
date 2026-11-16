@@ -1,9 +1,10 @@
 # Azravibe Recorder — build system.
 #
 # Two modes:
-#   1) Dev sandbox build (this machine): uses the local sysroot produced by
+#   1) Local development build: uses the local sysroot you point SYSROOT at
+#      (defaults to ~/.local/opt/azravibe-recorder/sysroot)
 #      extracting .deb packages — no root required.
-#         make            (auto-detects /tmp/opencode/sysroot)
+#         make            (uses the local sysroot, see SYSROOT below)
 #   2) Normal Linux machine with -dev packages installed system-wide:
 #         make SYSROOT=   (pkg-config based)
 #
@@ -11,7 +12,7 @@
 #   make            build ./build/azravibe-recorder
 #   make run        build + run
 #   make smoke      headless 3 s record smoke test (offscreen)
-#   make shot       render window to /tmp/opencode/azravibe-shot.png (offscreen)
+#   make shot       render window to /tmp/azravibe-shot.png (offscreen)
 #   make install    install to ~/.local (binary, launcher, icon, .desktop)
 #   make uninstall  remove installed files
 #   make clean
@@ -73,7 +74,7 @@ smoke: all
 	QT_QPA_PLATFORM=offscreen AZRAVIBE_SMOKE_SECONDS=3 ./azravibe-recorder
 
 shot: all
-	QT_QPA_PLATFORM=offscreen AZRAVIBE_SHOT=/tmp/opencode/azravibe-shot.png ./azravibe-recorder
+	QT_QPA_PLATFORM=offscreen AZRAVIBE_SHOT=/tmp/azravibe-shot.png ./azravibe-recorder
 
 PREFIX ?= $(HOME)/.local
 

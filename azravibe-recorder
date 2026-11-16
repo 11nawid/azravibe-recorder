@@ -1,6 +1,7 @@
 #!/bin/sh
 # Azravibe Recorder launcher.
-# Dev checkout: uses the sandbox sysroot (/tmp/opencode/sysroot) when present.
+# Dev checkout: uses the local development sysroot when present, then the
+# durable ~/.local fallback (used by installed/desktop launches).
 # Installed:   uses the system Qt and FFmpeg.
 set -e
 
