@@ -1,0 +1,19 @@
+# Build output
+build/
+*.o
+*.d
+
+# Extracted sysroots / downloaded packages
+sysroot/
+*.deb
+
+# Runtime artifacts
+azravibe-*.mp4
+azravibe-*.mkv
+.qt/
+
+# Editor / OS noise
+.vscode/
+.idea/
+.DS_Store
+*~

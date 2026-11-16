@@ -1,0 +1,25 @@
+#!/bin/sh
+# Azravibe Recorder launcher.
+# Dev checkout: uses the sandbox sysroot (/tmp/opencode/sysroot) when present.
+# Installed:   uses the system Qt and FFmpeg.
+set -e
+
+DIR=$(CDPATH= cd -- "$(dirname -- "$(readlink -f -- "$0")")" && pwd)
+SYSROOT=/tmp/opencode/sysroot
+
+BIN=""
+if [ -x "$DIR/azravibe-recorder.bin" ]; then
+    BIN="$DIR/azravibe-recorder.bin"
+elif [ -x "$DIR/build/azravibe-recorder" ]; then
+    BIN="$DIR/build/azravibe-recorder"
+else
+    echo "azravibe-recorder: binary not found. Run 'make' first." >&2
+    exit 1
+fi
+
+if [ -d "$SYSROOT/usr/lib/x86_64-linux-gnu" ]; then
+    export LD_LIBRARY_PATH="$SYSROOT/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH:-}"
+    export QT_PLUGIN_PATH="$SYSROOT/usr/lib/x86_64-linux-gnu/qt6/plugins"
+fi
+
+exec "$BIN" "$@"

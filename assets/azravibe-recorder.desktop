@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Azravibe Recorder
+GenericName=Screen Recorder
+Comment=Record your screen and windows with system or microphone audio
+Exec=@BIN@
+Icon=azravibe-recorder
+Terminal=false
+Categories=AudioVideo;Recorder;AudioVideoEditing;
+Keywords=screen;recorder;screencast;capture;video;audio;wfh;azravibe;
+StartupNotify=true
+StartupWMClass=azravibe-recorder
