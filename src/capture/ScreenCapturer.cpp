@@ -31,6 +31,10 @@ bool ScreenCapturer::open(const CaptureSpec& spec) {
                                    DisplayHeight(m_disp, DefaultScreen(m_disp)));
     m_buffer.reserve((size_t)DisplayWidth(m_disp, DefaultScreen(m_disp))
                    * (size_t)DisplayHeight(m_disp, DefaultScreen(m_disp)) * 4);
+
+    int fixesEventBase = 0, fixesErrorBase = 0;
+    m_fixesOk = XFixesQueryExtension(m_disp, &fixesEventBase, &fixesErrorBase);
+
     m_sizeGen = 1;
     return true;
 }
@@ -93,7 +97,45 @@ bool ScreenCapturer::grab() {
     region.setHeight(region.height() & ~1);
     if (region.width() < 2 || region.height() < 2) return false;
 
-    return grabRegion(region);
+    const bool captured = grabRegion(region);
+    if (captured && m_showCursor && m_fixesOk)
+        blendCursor(region);
+    return captured;
+}
+
+void ScreenCapturer::blendCursor(const QRect& capturedRegion) {
+    XFixesCursorImage* img = XFixesGetCursorImage(m_disp);
+    if (!img) return;
+
+    const int iw = (int)img->width, ih = (int)img->height;
+    if (iw <= 0 || ih <= 0) { XFree(img); return; }
+
+    // Cursor image coords (root-relative) → buffer-relative.
+    const int x0 = img->x - capturedRegion.x() - (int)img->xhot;
+    const int y0 = img->y - capturedRegion.y() - (int)img->yhot;
+    const bool rgbFirst = (m_format == RawPixelFormat::RGB0);
+
+    for (int y = 0; y < ih; ++y) {
+        const int dy = y0 + y;
+        if (dy < 0 || dy >= m_h) continue;
+        const unsigned long* srow = img->pixels + (size_t)y * (size_t)iw;
+        uint8_t* drow = m_buffer.data() + (size_t)dy * (size_t)m_stride;
+        for (int x = 0; x < iw; ++x) {
+            const uint32_t s = (uint32_t)srow[x];
+            const uint32_t a = (s >> 24) & 0xff;
+            if (a == 0) continue;
+            const int dx = x0 + x;
+            if (dx < 0 || dx >= m_w) continue;
+            const uint32_t sr = (s >> 16) & 0xff, sg = (s >> 8) & 0xff, sb = s & 0xff;
+            uint8_t* d = drow + (size_t)dx * 4;
+            const uint32_t inv = 255 - a;
+            const int bOff = rgbFirst ? 2 : 0, rOff = rgbFirst ? 0 : 2;
+            d[bOff] = (uint8_t)((sb * a + d[bOff] * inv + 127) / 255);
+            d[1]    = (uint8_t)((sg * a + d[1]    * inv + 127) / 255);
+            d[rOff] = (uint8_t)((sr * a + d[rOff] * inv + 127) / 255);
+        }
+    }
+    XFree(img);
 }
 
 bool ScreenCapturer::grabRegion(const QRect& r) {

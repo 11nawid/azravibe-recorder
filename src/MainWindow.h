@@ -12,6 +12,9 @@ class WaveformWidget;
 class RecordButton;
 class PauseButton;
 class TitleBar;
+class FolderButton;
+class CheckMarkBox;
+class QLabel;
 struct AudioSourceItem;
 
 class MainWindow : public QWidget {
@@ -26,6 +29,7 @@ public:
 protected:
     void closeEvent(QCloseEvent* event) override;
     void showEvent(QShowEvent* event) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
     void buildUi();
@@ -36,6 +40,9 @@ private:
     void stopRecording();
     void applyStateToWidgets();
     void syncEnabledState();
+    void pickOutputDir();
+    QString currentOutputDir() const;      // effective folder (configured or default)
+    void updateLocationLabel();
     static QString fileNameOf(const QString& path);
 
     RefreshComboBox* m_targetCombo = nullptr;
@@ -45,6 +52,9 @@ private:
     RecordButton*    m_recordBtn   = nullptr;
     PauseButton*     m_pauseBtn    = nullptr;
     TitleBar*        m_titleBar    = nullptr;
+    FolderButton*    m_outputBtn   = nullptr;
+    QLabel*          m_locationLabel = nullptr;
+    CheckMarkBox*    m_cursorCheck  = nullptr;
     QTimer           m_pollTimer;
 
     RecorderController m_controller;

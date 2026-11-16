@@ -16,12 +16,18 @@ No Electron, no bundled browser, no nonsense.
 - **Pause / Resume** mid-recording (file duration tracks the frozen pause)
 - **Live preview** of the exact screen / monitor / window being recorded
 - **Real waveform** of the captured audio (peak history, violet → cyan)
+- **Cursor baked into the recording** — toggle it off with the ✓ *Cursor* checkmark
+- **4K UHD output** (3840×2160) — lanczos upscale of lower-res sources; encoded
+  with **NVENC** when available (`h264_nvenc`), libx264 otherwise
+- **Choose your output folder** — the bar under the dropdowns shows the exact
+  folder videos go to; click the folder button to change it, click the path to
+  open it in your file manager (stored in `QSettings`, survives restarts)
 - Two dropdowns and nothing else: **what to record** + **audio source**
   - Targets: whole display, individual RandR monitors, any regular window
   - Sources: every PulseAudio/PipeWire source — monitors (system audio) and inputs (mic)
 - **Minimize keeps recording** — the capture pipeline is fully independent of the window
 - Close (✕) finalizes the file and quits the whole app
-- Automatic file naming: `~/Videos/Azravibe Recorder/azravibe-YYYYMMDD-HHMMSS.mp4`
+- Automatic file naming: `azravibe-YYYYMMDD-HHMMSS.mp4` in the output folder
 - A/V stays in sync on a wall-clock media timeline; pauses don't leave gaps
 - Low footprint: SHM-based capture, double-buffered frames, ~160 MB RSS typical
 - If the target window closes or quits mid-recording, the file is finalized cleanly
@@ -40,7 +46,7 @@ Build (Debian/Ubuntu):
 sudo apt install build-essential \
   qt6-base-dev libx11-dev libxext-dev libxrandr-dev \
   libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev \
-  libpulse-dev pkg-config
+  libpulse-dev libxfixes-dev pkg-config
 ```
 
 ## Build & run
@@ -83,6 +89,14 @@ make shot       # renders the window to /tmp/opencode/azravibe-shot.png
 `AZRAVIBE_SMOKE_SECONDS=N` and `AZRAVIBE_SHOT=/path.png` are honored by the
 binary for CI; `AZRAVIBE_SHOT` renders with the offscreen QPA platform.
 
+## Where do videos go?
+
+By default: **`~/Videos/Azravibe Recorder/azravibe-YYYYMMDD-HHMMSS.mp4`**.
+The row under the dropdowns shows the exact folder; the folder button opens a
+picker to change it, and clicking the path opens it in your file manager.
+4K UHD · NVENC (or libx264) · AAC audio. Settings live in
+`~/.config/azravibe/azravibe-recorder.conf` (`outputDir`, `showCursor`).
+
 ## How it works
 
 ```
@@ -118,9 +132,9 @@ apart — pausing freezes all three.
 
 - Capture reuses a resident MIT-SHM segment (`XShmGetImage`); requires no extra copies.
 - Preview renders at 512 px wide, skipped entirely while minimized/hidden.
-- `veryfast` H.264, `crf=21`, no B-frames → valid plain MP4 muxing without a dts shuffle.
-- 1080p on weak machines lands at ~15 fps; on a normal desktop expect full 30.
-- Measured RSS ≈ 155–160 MB (Qt + FFmpeg + x264 thread pools).
+- NVENC H.264 (`p4`, cq≈21, no B-frames; falls back to libx264 veryfast CRF 21) → valid plain MP4 muxing without a dts shuffle.
+- 1920×1080 at 30 fps or 4K at ~25–30 fps (NVENC, RTX 3050 measured).
+- Measured RSS ≈ 155–160 MB while idle/encoding (Qt + FFmpeg; NVENC offloads the heavy lifting).
 
 ## Troubleshooting
 

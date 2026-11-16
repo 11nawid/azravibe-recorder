@@ -25,6 +25,8 @@ inline QString styleSheet() {
         QWidget#titlebar { background: transparent; }
         QLabel#appName { color: %2; font-size: 12px; font-weight: 600; }
         QLabel#appNameFaint { color: %7; font-size: 12px; font-weight: 400; }
+        QWidget#outputbar { background: %3; border: 1px solid %4; border-radius: 11px; }
+        QLabel#locationPath { color: #C9C9D6; font-size: 11px; }
         QToolButton#iconButton {
             background: transparent; border: 0; border-radius: 9px; padding: 5px 10px;
         }

@@ -30,6 +30,9 @@ public:
     bool open(const CaptureSpec& spec);
     void close();
 
+    // Toggle live cursor compositing onto captured frames.
+    void setShowCursor(bool show) { m_showCursor = show; }
+
     // Grabs the current frame into the internal buffer.
     // Returns false when the target window disappeared / is unmapped; the
     // caller should stop the recording and finalize the file.
@@ -50,10 +53,14 @@ private:
     bool ensureShm(int w, int h);
     void destroyShm();
     bool resolveWindowRect(QRect& outRect, bool& ok) const;
+    void blendCursor(const QRect& capturedRegion);
 
     Display*        m_disp = nullptr;
     Window          m_root = 0;
     CaptureSpec     m_spec;
+
+    bool            m_fixesOk = false;     // XFixes extension present
+    bool            m_showCursor = true;   // user toggle (composited when true)
 
     bool            m_shmSupported = true;   // flips to false after the first SHM failure
     XImage*         m_shmImage     = nullptr;

@@ -23,11 +23,11 @@ extern "C" {
 
 struct EncoderConfig {
     int fps          = 30;
-    int outWidth     = 1920;   // rounded down to even automatically
-    int outHeight    = 1080;
+    int outWidth     = 3840;   // 4K UHD (controller sets to fit within this box)
+    int outHeight    = 2160;   // even, rounded down automatically
     int sampleRate   = 48000;
     int channels     = 2;
-    int crf          = 21;     // libx264 quality (lower = better)
+    int crf          = 21;     // libx264 quality (lower = better); NVENC maps to cq≈crf
     int audioKbps    = 160;
     int fallbackVideoKbps = 8000;
     const char* x264Preset = "veryfast";

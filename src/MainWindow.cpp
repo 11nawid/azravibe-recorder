@@ -6,17 +6,27 @@
 #include "RecordButton.h"
 #include "PauseButton.h"
 #include "TitleBar.h"
+#include "FolderButton.h"
+#include "CheckMark.h"
 #include "audio/AudioDevices.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QComboBox>
 #include <QLabel>
+#include <QFontMetrics>
 #include <QShortcut>
 #include <QKeySequence>
 #include <QCloseEvent>
 #include <QShowEvent>
 #include <QFileInfo>
+#include <QFileDialog>
+#include <QDesktopServices>
+#include <QUrl>
+#include <QSettings>
+#include <QEvent>
+#include <QDir>
+#include <QStandardPaths>
 #include <QApplication>
 #include <cstdio>
 
@@ -32,13 +42,26 @@ MainWindow::MainWindow(QWidget* parent) : QWidget(parent) {
     setWindowFlags(Qt::FramelessWindowHint | Qt::Window);
     setWindowTitle(QStringLiteral("Azravibe Recorder"));   // taskbar / Alt-Tab name
     setAttribute(Qt::WA_TranslucentBackground);
-    setFixedSize(664, 680);
+    setFixedSize(664, 734);
     setStyleSheet(az::styleSheet());
 
     buildUi();
 
     refreshTargets(false);
     refreshAudioSources(false);
+
+    // Restore persisted preferences (output folder + cursor toggle).
+    {
+        QSettings settings(QStringLiteral("azravibe"), QStringLiteral("azravibe-recorder"));
+        const QString outDir = settings.value(QStringLiteral("outputDir")).toString();
+        if (!outDir.isEmpty() && QDir(outDir).exists())
+            m_controller.setOutputDir(outDir);
+
+        const bool showCursor = settings.value(QStringLiteral("showCursor"), true).toBool();
+        m_cursorCheck->setChecked(showCursor);
+        m_controller.setCursorEnabled(showCursor);
+    }
+    updateLocationLabel();
 
     m_pollTimer.setInterval(33);   // ~30 Hz UI handoff
     connect(&m_pollTimer, &QTimer::timeout, this, &MainWindow::poll);
@@ -115,6 +138,34 @@ void MainWindow::buildUi() {
     row->addWidget(m_targetCombo, 1);
     row->addWidget(m_audioCombo, 1);
     bodyCol->addLayout(row);
+
+    // ---- output location + cursor toggle ----
+    auto* outputBar = new QWidget(body);
+    outputBar->setObjectName(QStringLiteral("outputbar"));
+    outputBar->setFixedHeight(38);
+    auto* locRow = new QHBoxLayout(outputBar);
+    locRow->setContentsMargins(6, 0, 6, 0);
+    locRow->setSpacing(9);
+
+    m_outputBtn = new FolderButton(outputBar);
+    m_outputBtn->onClicked = [this] { pickOutputDir(); };
+    locRow->addWidget(m_outputBtn, 0, Qt::AlignVCenter);
+
+    m_locationLabel = new QLabel(outputBar);
+    m_locationLabel->setObjectName(QStringLiteral("locationPath"));
+    m_locationLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    m_locationLabel->setCursor(Qt::PointingHandCursor);
+    m_locationLabel->installEventFilter(this);   // click → open folder
+    locRow->addWidget(m_locationLabel, 1, Qt::AlignVCenter);
+
+    m_cursorCheck = new CheckMarkBox(outputBar);
+    m_cursorCheck->onToggled = [this](bool on) {
+        m_controller.setCursorEnabled(on);
+        QSettings settings(QStringLiteral("azravibe"), QStringLiteral("azravibe-recorder"));
+        settings.setValue(QStringLiteral("showCursor"), on);
+    };
+    locRow->addWidget(m_cursorCheck, 0, Qt::AlignVCenter);
+    bodyCol->addWidget(outputBar);
 
     // ---- waveform ----
     m_wave = new WaveformWidget(body);
@@ -334,6 +385,43 @@ void MainWindow::poll() {
 
 void MainWindow::showEvent(QShowEvent* event) {
     QWidget::showEvent(event);
+}
+
+QString MainWindow::currentOutputDir() const {
+    const QString configured = m_controller.outputDir();
+    if (!configured.isEmpty()) return configured;
+    QString baseDir = QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);
+    if (baseDir.isEmpty()) baseDir = QDir::homePath() + QStringLiteral("/Videos");
+    return baseDir + QStringLiteral("/Azravibe Recorder");
+}
+
+void MainWindow::updateLocationLabel() {
+    const QString dir = currentOutputDir();
+    const QFontMetrics fm(m_locationLabel ? m_locationLabel->font() : QFont());
+    if (m_locationLabel) {
+        m_locationLabel->setText(fm.elidedText(dir, Qt::ElideLeft, 300));
+        m_locationLabel->setToolTip(dir + QStringLiteral("\nClick to open in file manager"));
+    }
+}
+
+void MainWindow::pickOutputDir() {
+    const QString picked = QFileDialog::getExistingDirectory(
+        this, QStringLiteral("Choose output folder"), currentOutputDir(),
+        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+    if (picked.isEmpty()) return;
+
+    m_controller.setOutputDir(picked);
+    QSettings settings(QStringLiteral("azravibe"), QStringLiteral("azravibe-recorder"));
+    settings.setValue(QStringLiteral("outputDir"), picked);
+    updateLocationLabel();
+}
+
+bool MainWindow::eventFilter(QObject* watched, QEvent* event) {
+    if (watched == m_locationLabel && event->type() == QEvent::MouseButtonPress) {
+        QDesktopServices::openUrl(QUrl::fromLocalFile(currentOutputDir()));
+        return true;
+    }
+    return QWidget::eventFilter(watched, event);
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {

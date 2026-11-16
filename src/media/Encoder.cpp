@@ -20,7 +20,9 @@ Encoder::~Encoder() { release(); }
 
 CodecProbe Encoder::probe() {
     CodecProbe p;
-    if (const AVCodec* c = avcodec_find_encoder_by_name("libx264")) {
+    if (const AVCodec* c = avcodec_find_encoder_by_name("h264_nvenc")) {
+        p.videoName = c->name; p.h264 = true;   // GPU path: realtime 4K on NVENC
+    } else if (const AVCodec* c = avcodec_find_encoder_by_name("libx264")) {
         p.videoName = c->name; p.h264 = true;
     } else if (avcodec_find_encoder(AV_CODEC_ID_H264)) {
         p.videoName = "h264"; p.h264 = true;
@@ -118,6 +120,14 @@ bool Encoder::addVideoStream() {
         av_opt_set(m_vctx->priv_data, "crf", crf, 0);
         av_opt_set(m_vctx->priv_data, "bframes", "0", 0);
         av_opt_set(m_vctx->priv_data, "tune", "zerolatency", 0);
+    } else if (m_videoCodecName == "h264_nvenc") {
+        char cq[16];
+        std::snprintf(cq, sizeof(cq), "%d", m_cfg.crf);
+        av_opt_set(m_vctx->priv_data, "preset", "p4", 0);      // balanced quality/speed
+        av_opt_set(m_vctx->priv_data, "rc", "vbr", 0);
+        av_opt_set(m_vctx->priv_data, "cq", cq, 0);
+        av_opt_set(m_vctx->priv_data, "b_ref_mode", "disabled", 0);
+        av_opt_set(m_vctx->priv_data, "zerolatency", "1", 0);
     } else {
         m_vctx->bit_rate = (int64_t)m_cfg.fallbackVideoKbps * 1000;
     }
@@ -226,9 +236,12 @@ bool Encoder::writeVideoFrame(const uint8_t* src, int srcStride, int srcW, int s
     std::lock_guard<std::mutex> lock(m_mutex);
     if (!isOpen() || m_broken) return false;
 
+    // Lanzcos for upscales (4K output from a lower-res source), fast bilinear otherwise.
+    const int swsFlags = (srcW < m_cfg.outWidth || srcH < m_cfg.outHeight)
+                             ? SWS_LANCZOS : SWS_FAST_BILINEAR;
     m_sws = sws_getCachedContext(m_sws, srcW, srcH, lavFmt(fmt),
                                  m_cfg.outWidth, m_cfg.outHeight, AV_PIX_FMT_YUV420P,
-                                 SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
+                                 swsFlags, nullptr, nullptr, nullptr);
     if (!m_sws) { fail("sws init failed"); return false; }
 
     if (!m_vframe) {

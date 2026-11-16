@@ -27,7 +27,7 @@ azravibe-recorder/
     │   ├── ScreenCapturer.*# MIT-SHM grab + XGetImage fallback, window-tracked regions
     │   └── WindowEnumerator.* # EWMH _NET_CLIENT_LIST + RandR monitors
     └── media/
-        ├── Encoder.*       # avformat muxer: h264/mpeg4 + aac/mp3/mp2, mp4/mkv
+        ├── Encoder.*       # avformat muxer: h264_nvenc/libx264/mpeg4 + aac/mp3/mp2, mp4/mkv
         └── RawPixel.h
 ```
 
@@ -70,7 +70,7 @@ X11 only through `src/capture/X11Headers.h`, which brackets the includes in
 ## Performance levers
 
 - `SWS_FAST_BILINEAR` for both yuv420p and preview conversions.
-- `crf=21`, `veryfast`, `bframes=0` (plain MP4-safe pts).
+- `crf=21`, `p4`/`veryfast`, `bframes=0` (plain MP4-safe pts).
 - Preview skipped when minimized (`setPreviewWanted(false)`).
 - Pa server buffer ≈ 500 ms so encoder CPU bursts don't drop samples.
 
@@ -83,4 +83,4 @@ QT_QPA_PLATFORM=offscreen ./azravibe-recorder   # or: real X session
 ```
 
 Verify the output with any player (or `ffprobe`): duration ≈ N seconds,
-h264 1080p video, AAC 48 kHz stereo.
+h264 (NVENC/libx264) 3840×2160 video, AAC 48 kHz stereo.

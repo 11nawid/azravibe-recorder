@@ -49,6 +49,12 @@ public:
     bool                autoStopRequested() const { return m_autoStopRequested.load(std::memory_order_acquire); }
     // GUI hint: render the preview pipeline (skipped while the app is minimized).
     void                setPreviewWanted(bool wanted) { m_previewWanted.store(wanted, std::memory_order_relaxed); }
+    // Where files are written (empty → MoviesLocation/Azravibe Recorder).
+    void                setOutputDir(const QString& dir);
+    QString             outputDir() const { return m_outputDir; }
+    // Draw the live cursor into captured frames.
+    void                setCursorEnabled(bool enabled) { m_cursorEnabled.store(enabled, std::memory_order_relaxed); }
+    bool                cursorEnabled() const { return m_cursorEnabled.load(std::memory_order_relaxed); }
     int                 sourceWidth()  const { return m_sourceW; }
     int                 sourceHeight() const { return m_sourceH; }
 
@@ -63,6 +69,7 @@ private:
     std::atomic<bool>    m_stopRequested{false};
     std::atomic<bool>    m_autoStopRequested{false};
     std::atomic<bool>    m_previewWanted{true};
+    std::atomic<bool>    m_cursorEnabled{true};
     std::atomic<int>     m_captureFailures{0};
 
     std::thread m_videoThread;
@@ -97,6 +104,7 @@ private:
 
     mutable std::mutex       m_pathMutex;
     QString                  m_savedPath;
+    QString                  m_outputDir;         // empty = default location
     mutable std::mutex       m_errorMutex;
     QString                  m_error;
 };

@@ -28,6 +28,7 @@
 #include <X11/Xatom.h>
 #include <X11/extensions/XShm.h>
 #include <X11/extensions/Xrandr.h>
+#include <X11/extensions/Xfixes.h>
 #pragma pop_macro("Status")
 #pragma pop_macro("Bool")
 #pragma pop_macro("Unsorted")

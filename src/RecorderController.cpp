@@ -8,6 +8,7 @@
 #include <chrono>
 #include <cstring>
 #include <cmath>
+#include <algorithm>
 
 namespace {
 constexpr int64_t kUsPerSecond = 1000000;
@@ -26,6 +27,11 @@ RecorderController::RecorderController() = default;
 
 RecorderController::~RecorderController() {
     stopRecording();
+}
+
+void RecorderController::setOutputDir(const QString& dir) {
+    std::lock_guard<std::mutex> lock(m_pathMutex);
+    m_outputDir = dir;
 }
 
 QString RecorderController::lastSavedPath() const {
@@ -85,6 +91,7 @@ bool RecorderController::startRecording(const TargetItem& target, const QString&
         m_error = QStringLiteral("Could not open the capture session.");
         return false;
     }
+    m_capturer.setShowCursor(m_cursorEnabled.load(std::memory_order_relaxed));
 
     // Prime the first frame to learn the source size.
     if (!m_capturer.grab()) {
@@ -95,14 +102,29 @@ bool RecorderController::startRecording(const TargetItem& target, const QString&
     m_sourceW = m_capturer.width();
     m_sourceH = m_capturer.height();
 
-    // Decide where to save.
-    QString baseDir = QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);
-    if (baseDir.isEmpty()) baseDir = QDir::homePath() + QStringLiteral("/Videos");
-    QDir dir(baseDir + QStringLiteral("/Azravibe Recorder"));
-    if (!dir.exists() && !dir.mkpath(QStringLiteral("."))) {
-        m_error = QStringLiteral("Cannot create output folder.");
-        m_capturer.close();
-        return false;
+    // Decide where to save (user-picked folder, else default Movies location).
+    QString dirPath;
+    {
+        std::lock_guard<std::mutex> lock(m_pathMutex);
+        dirPath = m_outputDir;
+    }
+    QDir dir;
+    if (!dirPath.isEmpty()) {
+        dir = QDir(dirPath);
+        if (!dir.exists() && !dir.mkpath(QStringLiteral("."))) {
+            m_error = QStringLiteral("Output folder is not writable: %1").arg(dirPath);
+            m_capturer.close();
+            return false;
+        }
+    } else {
+        QString baseDir = QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);
+        if (baseDir.isEmpty()) baseDir = QDir::homePath() + QStringLiteral("/Videos");
+        dir = QDir(baseDir + QStringLiteral("/Azravibe Recorder"));
+        if (!dir.exists() && !dir.mkpath(QStringLiteral("."))) {
+            m_error = QStringLiteral("Cannot create output folder.");
+            m_capturer.close();
+            return false;
+        }
     }
 
     const CodecProbe probeResult = Encoder::probe();
@@ -110,10 +132,18 @@ bool RecorderController::startRecording(const TargetItem& target, const QString&
     const QString path = dir.filePath(QStringLiteral("azravibe-%1%2")
                                           .arg(stamp, QString::fromUtf8(probeResult.suggestedExtension())));
 
+    // 4K UHD output: fit inside 3840x2160 (upscaled when the source is smaller),
+    // even dimensions for yuv420p.
+    const double scale = std::min(3840.0 / m_sourceW, 2160.0 / m_sourceH);
     EncoderConfig cfg;
     cfg.fps        = m_fps;
-    cfg.outWidth   = m_sourceW;
-    cfg.outHeight  = m_sourceH;
+    cfg.outWidth   = ((int)(m_sourceW * scale)) & ~1;
+    cfg.outHeight  = ((int)(m_sourceH * scale)) & ~1;
+    if (cfg.outWidth < 2 || cfg.outHeight < 2) {
+        m_error = QStringLiteral("Output size computation failed.");
+        m_capturer.close();
+        return false;
+    }
     cfg.sampleRate = 48000;
     cfg.channels   = 2;
 

@@ -4,6 +4,24 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] - 2026-11-16
+
+### Added
+- **4K UHD output** (3840×2160) with lanczos upscaling of lower-resolution
+  sources; encoded with **NVENC** (`h264_nvenc`, preferred) or libx264 fallback.
+- **Cursor capture** — the live mouse cursor is composited into recorded
+  frames (libXFixes), toggleable with the new ✓ *Cursor* checkmark in the UI.
+- **Output location bar** — shows the current save folder; click the folder
+  icon to pick a different output directory, click the path to open it in your
+  file manager. Persisted in QSettings.
+- Measured ~28 fps at 3840×2160 on the development machine (RTX 3050).
+
+### Fixed
+- Build system now defaults to the durable sysroot at
+  `~/.local/opt/azravibe-recorder/sysroot` instead of the tmpfs path used during
+  initial development.
+- `docs/probe.cpp` (media inspection helper) committed; `docs/screenshot.png` refreshed.
+
 ## [1.0.1] - 2026-11-16
 
 ### Fixed
