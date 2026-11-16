@@ -1,172 +1,129 @@
+<div align="center">
+
 # Azravibe Recorder
+### Free, Open-Source 4K Screen Recorder for Linux (X11)
 
-**Azravibe Recorder** is a minimal, aesthetic screen recorder for Linux (X11).
-It records the full screen, a single monitor, or a single window — with audio
-from any PulseAudio / PipeWire source — to H.264 + AAC in an `.mp4` (or
-Matroska when the fallback encoders kick in).
+**The aesthetic, zero-bloat screen recorder for Linux that just works.**
+Record your screen, any monitor, or any window — in crisp **4K UHD** with
+real-time audio monitoring, a live waveform, hardware NVENC encoding and a
+frameless, human-designed interface.
 
-Built in C++17, Qt 6 (Widgets), FFmpeg (libav) and PulseAudio simple API.
-No Electron, no bundled browser, no nonsense.
+<img src="docs/screenshot.png" alt="Azravibe Recorder — minimal 4K Linux screen recorder UI" width="620"/>
 
-![Azravibe Recorder](docs/screenshot.png)
+[![License](https://img.shields.io/badge/license-MIT-a78bfa?style=flat-square)](LICENSE)
+[![Version](https://img.shields.io/badge/version-v1.1.1-22d3ee?style=flat-square)](CHANGELOG.md)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20X11-2a2a35?style=flat-square)](https://x.org/)
+[![Language](https://img.shields.io/badge/language-C%2B%2B17-8b5cf6?style=flat-square)](https://isocpp.org/)
+[![Qt](https://img.shields.io/badge/toolkit-Qt%206-41cd52?style=flat-square)](https://www.qt.io/)
+[![Stars](https://img.shields.io/github/stars/11nawid/azravibe-recorder?color=ffd166&style=flat-square)](https://github.com/11nawid/azravibe-recorder/stargazers)
+[![Forks](https://img.shields.io/github/forks/11nawid/azravibe-recorder?color=4ade80&style=flat-square)](https://github.com/11nawid/azravibe-recorder/network/members)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square&logo=github)](CONTRIBUTING.md)
 
-## Features
+⭐ **If this helps you, tap the star — it genuinely helps the project grow.** ⭐
 
-- One giant, honest **Record** button — click to start, click again to stop
-- **Pause / Resume** mid-recording (file duration tracks the frozen pause)
-- **Live preview** of the exact screen / monitor / window being recorded
-- **Real waveform** of the captured audio (peak history, violet → cyan)
-- **Cursor baked into the recording** — toggle it off with the ✓ *Cursor* checkmark
-- **4K UHD output** (3840×2160) — lanczos upscale of lower-res sources; encoded
-  with **NVENC** when available (`h264_nvenc`), libx264 otherwise
-- **Choose your output folder** — the bar under the dropdowns shows the exact
-  folder videos go to; click the folder button to change it, click the path to
-  open it in your file manager (stored in `QSettings`, survives restarts)
-- Two dropdowns and nothing else: **what to record** + **audio source**
-  - Targets: whole display, individual RandR monitors, any regular window
-  - Sources: every PulseAudio/PipeWire source — monitors (system audio) and inputs (mic)
-- **Minimize keeps recording** — the capture pipeline is fully independent of the window
-- Close (✕) finalizes the file and quits the whole app
-- Automatic file naming: `azravibe-YYYYMMDD-HHMMSS.mp4` in the output folder
-- A/V stays in sync on a wall-clock media timeline; pauses don't leave gaps
-- Low footprint: SHM-based capture, double-buffered frames, ~160 MB RSS typical
-- If the target window closes or quits mid-recording, the file is finalized cleanly
+</div>
 
-## Requirements
+---
 
-Runtime:
-- X11 session (works under Xwayland too)
-- PulseAudio or PipeWire (pipewire-pulse is supported — `pactl` must be on PATH)
-- Qt 6.4+ base, FFmpeg 6 libs (libavformat/libavcodec/libswscale/libswresample/libavutil)
-  - libavcodec built with **libx264** strongly recommended (falls back to MPEG-4 otherwise)
+## Why another screen recorder?
 
-Build (Debian/Ubuntu):
+Most Linux screen recorders are either Electron wrappers weighing half a
+gigabyte, or two-knob CLI tools with no soul. **Azravibe Recorder is neither.**
+It is a single native binary — C++17 + Qt 6 — that gives you a **beautiful,
+productive** recording workflow in ~160 MB of RAM:
 
-```bash
-sudo apt install build-essential \
-  qt6-base-dev libx11-dev libxext-dev libxrandr-dev \
-  libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev \
-  libpulse-dev libxfixes-dev pkg-config
-```
+- 🎥 **Real 4K UHD (3840×2160)** recording with lanczos upscale, NVENC on your GPU
+- 🌊 **Live, real audio waveform** — actual PCM peaks, not a fake animation
+- 🖱️ **Cursor baked in** — pointer visible in recordings (toggle with ✓ Cursor)
+- ⏸️ **Pause/Resume** — wall-clock timeline keeps audio & video perfectly in sync
+- 🖥️ **Three capture targets** — entire display · per-monitor (RandR) · any window
+- 🗂️ **Choose your output folder** — one glance shows exactly where files go
+- 🔔 **Minimize keeps recording** — close the window, it never stops your capture
+- 🚫 **Zero Electron, zero cloud, zero account** — completely local & private
 
-## Build & run
+### Keywords
+`open source screen recorder` · `4k screen recorder linux` · `linux screencast` ·
+`x11 screen recorder` · `ubuntu screen recorder` · `screen recorder linux mint` ·
+`record desktop with audio` · `free screen recorder linux` · `c++ screen recorder` ·
+`qt screen recorder` · `azravibe recorder`
+
+---
+
+## Quick start
 
 ```bash
-make            # build → build/azravibe-recorder
+git clone https://github.com/11nawid/azravibe-recorder.git
+cd azravibe-recorder
+make            # native build against your system Qt 6 & FFmpeg
 ./azravibe-recorder
 ```
 
-On machines without system Qt dev packages, `make` auto-detects the sandbox
-sysroot at `/tmp/opencode/sysroot` (used by the author's CI sandbox). To force
-system lookup: `make SYSROOT=`.
-
-### Install
+**Requirements (Debian/Ubuntu/Mint):**
 
 ```bash
-make install    # installs ~/.local/bin/azravibe-recorder(+bin), icon, .desktop
+sudo apt install build-essential \
+  qt6-base-dev libx11-dev libxext-dev libxrandr-dev libxfixes-dev \
+  libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev \
+  libpulse-dev pkg-config
 ```
+
+**Install it properly:**
+
+```bash
+make install    # ~/.local/bin/azravibe-recorder + icon + .desktop entry
+```
+
+> NVIDIA users: make sure your driver is current — `h264_nvenc` is auto-detected
+> and used automatically; everything else falls back to libx264 with zero changes.
 
 ## Controls
 
 | Control | Action |
 |---|---|
-| Record button (right) | Start / stop recording |
-| Pause button (left of it) | Pause / resume (only while recording) |
-| `Ctrl+R` | Toggle record/stop |
-| `Ctrl+Space` | Toggle pause/resume |
-| `Ctrl+Q` | Finalize & quit |
-| Title bar ✕ | Finalize & quit (same as close) |
-| Title bar — | Minimize (**recording continues**) |
-| Drag title bar | Move window |
+| Record button | Start / stop recording |
+| Pause button | Pause / resume (only while recording) |
+| `Ctrl+R` / `Ctrl+Space` / `Ctrl+Q` | Record · Pause · Quit |
+| Title bar **—** | Minimize (**recording continues**) |
+| Title bar **✕** | Stop recording, finalize file, quit |
 
-## Smoke test (headless-ish)
+**Output:** `~/Videos/Azravibe Recorder/azravibe-YYYYMMDD-HHMMSS.mp4` (folder is
+configurable in-app and persisted in `QSettings`).
 
-```bash
-make smoke      # offscreen run: records ~3 s, writes a real .mp4, prints the path
-make shot       # renders the window to /tmp/opencode/azravibe-shot.png
-```
+## What it records
 
-`AZRAVIBE_SMOKE_SECONDS=N` and `AZRAVIBE_SHOT=/path.png` are honored by the
-binary for CI; `AZRAVIBE_SHOT` renders with the offscreen QPA platform.
+| Track | Codec | Container |
+|---|---|---|
+| Video | H.264 (NVENC or libx264), 3840×2160 | MP4 (faststart) |
+| Audio | AAC 48 kHz stereo, 160 kbps | MP4 |
 
-## Where do videos go?
+## Roadmap
 
-By default: **`~/Videos/Azravibe Recorder/azravibe-YYYYMMDD-HHMMSS.mp4`**.
-The row under the dropdowns shows the exact folder; the folder button opens a
-picker to change it, and clicking the path opens it in your file manager.
-4K UHD · NVENC (or libx264) · AAC audio. Settings live in
-`~/.config/azravibe/azravibe-recorder.conf` (`outputDir`, `showCursor`).
+- [ ] Wayland capture path (PipeWire ScreenCast portal)
+- [ ] Global hotkeys for record/pause from anywhere
+- [ ] Per-source gain & mic monitoring in the waveform
+- [ ] Snapshot / GIF export buttons
+- [ ] Localization (Persian, German, Spanish, …)
 
-## How it works
+Have an idea? [Open an issue](https://github.com/11nawid/azravibe-recorder/issues) — PRs welcome.
 
-```
-┌──────────┐   XShm/XGetImage   ┌────────────┐
-│ X server │ ─────────────────► │  Capturer  │
-└──────────┘                    └─────┬──────┘
-                                      │ BGRX frames (30 tick)
-        ┌─────────────────────────────┼──────────────────┐
-        ▼                             ▼                  ▼
-┌───────────────┐            ┌────────────────┐   preview (512 px,
-│ swscale→yuv420p│            │ capture→Qt     │   RGB888, only while
-│ libx264 → muxer│            │ PreviewWidget  │   window is visible)
-└──────┬────────┘            └────────────────┘
-       │ av_interleaved_write_frame
-┌──────▼────────┐
-│  mkv/mp4 file │
-└──────▲────────┘
-       │ av_interleaved_write_frame
-┌──────┴────────┐
-│ swr→fltp, AAC │
-└──────▲────────┘
-       │ int16 PCM @48 kHz stereo (10 ms blocks)
-┌──────┴────────┐
-│ pa_simple_read│   ← dev = chosen source (or server default)
-└───────────────┘
-```
+## Support the project 💜
 
-Timestamps come from a single wall-clock **media clock** (skipped while paused),
-so video `pts`, audio sample indices and the on-screen timer can never drift
-apart — pausing freezes all three.
+Azravibe Recorder is free and open source, built and maintained by one person.
+If it saved your time:
 
-## Performance notes
+- ⭐ **Star** this repo (it costs nothing, means a lot)
+- 📣 **Share** it with friends, your Linux group, or on YouTube/Reddit
+- ☕ **Help / donate / sponsor** — message me directly on Instagram:
+  **[@1n1.nawid](https://www.instagram.com/1n1.nawid/)** or find me on GitHub:
+  **[11nawid](https://github.com/11nawid)**
 
-- Capture reuses a resident MIT-SHM segment (`XShmGetImage`); requires no extra copies.
-- Preview renders at 512 px wide, skipped entirely while minimized/hidden.
-- NVENC H.264 (`p4`, cq≈21, no B-frames; falls back to libx264 veryfast CRF 21) → valid plain MP4 muxing without a dts shuffle.
-- 1920×1080 at 30 fps or 4K at ~25–30 fps (NVENC, RTX 3050 measured).
-- Measured RSS ≈ 155–160 MB while idle/encoding (Qt + FFmpeg; NVENC offloads the heavy lifting).
+## Contributing
 
-## Troubleshooting
-
-- **System audio is silent / track shorter than video**
-  The chosen source (usually a `monitor`) only streams when the server runs.
-  PipeWire may starve idle monitors — pick the microphone or any input source
-  instead, or ensure audio is actually playing while recording.
-- **`pactl` not found**
-  Install `pulseaudio-utils` (or `pipewire-pulse`). The UI falls back to short
-  source listing, and to the server default source if nothing is listed.
-- **Weird window captured**
-  The window is captured by cropping the root window region, so it records
-  exactly what you see (including overlapping windows on top of it).
-- **Monitor selection**
-  Multi-head uses RandR monitors ("Monitor 2 · primary", etc.). Falls back to
-  one "Entire display" entry.
-
-## Development
-
-Environment hooks (not for end users):
-
-```bash
-AZRAVIBE_SHOT=/tmp/x.png QT_QPA_PLATFORM=offscreen ./azravibe-recorder
-AZRAVIBE_SMOKE_SECONDS=3 QT_QPA_PLATFORM=offscreen ./azravibe-recorder
-```
-
-Debug RSS/timings: see `docs/DEVELOPMENT.md` (or just `top -p $(pgrep azravibe)`).
-
-## Versioning
-
-This repo uses Git with semantic tags (`v1.0.0`, …). See `CHANGELOG.md`.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) — it covers the build, the smoke test
+(`make smoke` — headless, writes a real .mp4), coding style and how to submit PRs.
 
 ## License
 
-MIT — see `LICENSE`.
+MIT — see [LICENSE](LICENSE). Do almost anything you want with it; attribution appreciated.
+
+<sub>Keywords: azravibe-recorder · screen-recorder · linux · x11 · ubuntu · mint · 4k · nvenc · qt6 · c++ · ffmpeg · open-source</sub>

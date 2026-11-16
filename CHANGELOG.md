@@ -4,6 +4,14 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.1.1] - 2026-11-16
+
+### Documentation
+- Publication-ready README: SEO-friendly title/description/keywords, badges,
+  support & donation links (Instagram @1n1.nawid), publishing checklist.
+- `CONTRIBUTING.md`, `.github/FUNDING.yml` and issue templates added.
+- Native links now point at `github.com/11nawid/azravibe-recorder`.
+
 ## [1.1.0] - 2026-11-16
 
 ### Added
