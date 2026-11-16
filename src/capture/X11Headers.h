@@ -1,0 +1,50 @@
+// Central X11 include point. X11 exports macros like `None` and `KeyPress`
+// that Qt's headers reuse as identifiers, so every colliding macro is pushed
+// before including X11 and popped afterwards — they never leak into Qt TUs.
+#pragma once
+
+#pragma push_macro("None")
+#pragma push_macro("ParentRelative")
+#pragma push_macro("CopyFromParent")
+#pragma push_macro("PointerRoot")
+#pragma push_macro("InputFocus")
+#pragma push_macro("AllocNone")
+#pragma push_macro("KeyPress")
+#pragma push_macro("KeyRelease")
+#pragma push_macro("Expose")
+#pragma push_macro("FocusIn")
+#pragma push_macro("FocusOut")
+#pragma push_macro("FontChange")
+#pragma push_macro("Always")
+#pragma push_macro("Below")
+#pragma push_macro("Complex")
+#pragma push_macro("CursorShape")
+#pragma push_macro("GrayScale")
+#pragma push_macro("Unsorted")
+#pragma push_macro("Bool")
+#pragma push_macro("Status")
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/Xatom.h>
+#include <X11/extensions/XShm.h>
+#include <X11/extensions/Xrandr.h>
+#pragma pop_macro("Status")
+#pragma pop_macro("Bool")
+#pragma pop_macro("Unsorted")
+#pragma pop_macro("GrayScale")
+#pragma pop_macro("CursorShape")
+#pragma pop_macro("Complex")
+#pragma pop_macro("Below")
+#pragma pop_macro("Always")
+#pragma pop_macro("FontChange")
+#pragma pop_macro("FocusOut")
+#pragma pop_macro("FocusIn")
+#pragma pop_macro("Expose")
+#pragma pop_macro("KeyRelease")
+#pragma pop_macro("KeyPress")
+#pragma pop_macro("AllocNone")
+#pragma pop_macro("InputFocus")
+#pragma pop_macro("PointerRoot")
+#pragma pop_macro("CopyFromParent")
+#pragma pop_macro("ParentRelative")
+#pragma pop_macro("None")
