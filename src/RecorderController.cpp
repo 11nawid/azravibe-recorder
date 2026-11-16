@@ -322,7 +322,7 @@ void RecorderController::videoLoop() {
         if (!m_previewWanted.load(std::memory_order_relaxed)) {
             // Minimized / hidden: keep the last frame (poll re-enables it).
         } else {
-        const int pw = qMin(512, w & ~1);
+        const int pw = qMin(1280, w & ~1);
         const int ph = qMax(2, (int)std::llround((double)pw * h / (double)w) & ~1);
         if (!m_swsPreview || pw != m_previewW || ph != m_previewH) {
             if (m_swsPreview) { sws_freeContext(m_swsPreview); m_swsPreview = nullptr; }
@@ -334,7 +334,7 @@ void RecorderController::videoLoop() {
             m_swsPreview = sws_getCachedContext(nullptr, w, h,
                                                 m_capturer->format() == RawPixelFormat::BGR0 ? AV_PIX_FMT_BGR0 : AV_PIX_FMT_RGB0,
                                                 pw, ph, AV_PIX_FMT_RGB24,
-                                                SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
+                                                SWS_LANCZOS, nullptr, nullptr, nullptr);
             m_previewFrame = av_frame_alloc();
             m_previewFrame->format = AV_PIX_FMT_RGB24;
             m_previewFrame->width  = pw;

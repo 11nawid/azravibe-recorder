@@ -7,7 +7,7 @@
 # The GitHub Actions release workflow (.github/workflows/release.yml) uses this
 # file to produce the .deb / .exe installer / .dmg for tagged releases.
 cmake_minimum_required(VERSION 3.16)
-project(azravibe-recorder VERSION 1.3.3 LANGUAGES CXX C)
+project(azravibe-recorder VERSION 1.3.4 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -53,7 +53,8 @@ elseif(WIN32)
         src/capture/WinCapture.cpp
         src/capture/WinWindowEnumerator.cpp
         src/audio/AudioDevicesWin.cpp
-        src/audio/AudioCapturerWin.cpp)
+        src/audio/AudioCapturerWin.cpp
+        packaging/windows/azravibe-recorder.rc)
 
     # FFmpeg prebuilt dev packages — set -DFFMPEG_DIR=<path to ffmpeg root>
     set(FFMPEG_DIR "$ENV{FFMPEG_DIR}" CACHE PATH "FFmpeg root (include/ + lib/)")

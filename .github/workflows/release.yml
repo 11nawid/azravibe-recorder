@@ -73,6 +73,7 @@ jobs:
           copy build-win\azravibe-recorder.exe dist\windows-stage\
           windeployqt --release --no-translations dist\windows-stage\azravibe-recorder.exe
           xcopy /E /Y "%FFMPEG_DIR%\bin\*.dll" dist\windows-stage\
+          copy assets\azravibe-recorder.ico dist\windows-stage\
           copy LICENSE dist\windows-stage\LICENSE.txt
 
       - name: Build installer
